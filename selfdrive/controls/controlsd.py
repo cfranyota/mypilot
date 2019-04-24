@@ -402,7 +402,7 @@ def controlsd_thread(gctx=None, rate=100):
 
   # No sendcan if passive
   if not passive:
-    sendcan = messaging.pub_sock(context, service_list['sendcan'].port)
+        sendcan = messaging.pub_sock(context, service_list['sendcan'].port)
   else:
     sendcan = None
 
@@ -507,7 +507,8 @@ def controlsd_thread(gctx=None, rate=100):
       state_control(plan.plan, path_plan.pathPlan, CS, CP, state, events, v_cruise_kph,
                     v_cruise_kph_last, AM, rk, driver_status,
                     LaC, LoC, VM, angle_model_bias, passive, is_metric, cal_perc)
-
+    
+    rk.keep_time()  # Run at 100Hz
     prof.checkpoint("State Control")
 
     # Publish data
@@ -515,7 +516,7 @@ def controlsd_thread(gctx=None, rate=100):
                    live100, AM, driver_status, LaC, LoC, angle_model_bias, passive, start_time, params, v_acc, a_acc)
     prof.checkpoint("Sent")
 
-    rk.keep_time()  # Run at 100Hz
+    
     prof.display()
 
 
