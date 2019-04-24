@@ -6,7 +6,7 @@ int tesla_radar_can = 1; // 0, 1 or 2 set from EON via fake message
 int tesla_radar_vin_complete = 0; //set to 7 when complete vin is received
 int tesla_radar_should_send = 0; //set to 1 from EON via fake message when we want to use it
 int tesla_radar_counter = 0; //counter to determine when to send messages
-int tesla_radar_trigger_message_id = 0; //id of the message at 100Hz to trigger the radar data
+int tesla_radar_trigger_message_id = 0x1d6; //id of the message at 100Hz to trigger the radar data
 int actual_speed_kph = 0; //use the rx_hook to set this to the car speed in kph; used by radar
 int tesla_radar_config_message_id = 0x560; //message used to send VIN to Panda
 
