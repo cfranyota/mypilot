@@ -137,7 +137,9 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
       radar_VIN[16] = radarVin_b7;
       tesla_radar_vin_complete = tesla_radar_vin_complete | 4;
     }
-    return false;
+    else {
+      return 0;
+    }
   }
   // disallow actuator commands if gas or brake (with vehicle moving) are pressed
   // and the the latching controls_allowed flag is True
