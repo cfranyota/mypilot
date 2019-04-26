@@ -402,7 +402,7 @@ def controlsd_thread(gctx=None, rate=100):
 
   # No sendcan if passive
   if not passive:
-        sendcan = messaging.pub_sock(context, service_list['sendcan'].port)
+    sendcan = messaging.pub_sock(context, service_list['sendcan'].port)
   else:
     sendcan = None
 
