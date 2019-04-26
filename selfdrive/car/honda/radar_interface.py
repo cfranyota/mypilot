@@ -60,7 +60,7 @@ def _create_nidec_can_parser():
 
 
 class RadarInterface(object):
-  def __init__(self,CP):
+  def __init__(self, CP):
     # radar
     self.pts = {}
     self.delay = 0.1
