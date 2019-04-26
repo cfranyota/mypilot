@@ -2,11 +2,11 @@ int tesla_radar_status = 0; //0-not present, 1-initializing, 2-active
 uint32_t tesla_last_radar_signal = 0;
 const int TESLA_RADAR_TIMEOUT = 1000000; // 1 second between real time checks
 char radar_VIN[] = "                 "; //leave empty if your radar VIN matches the car VIN
-int tesla_radar_can = 1; // 0, 1 or 2 set from EON via fake message
+uint8_t tesla_radar_can = 2; // 0, 1 or 2 set from EON via fake message
 int tesla_radar_vin_complete = 0; //set to 7 when complete vin is received
 int tesla_radar_should_send = 0; //set to 1 from EON via fake message when we want to use it
 int tesla_radar_counter = 0; //counter to determine when to send messages
-uint8_t tesla_radar_trigger_message_id = 0x17c; //id of the message
+uint32_t tesla_radar_trigger_message_id = 0x17c; //id of the message
 int actual_speed_kph = 0; //use the rx_hook to set this to the car speed in kph; used by radar
 int tesla_radar_config_message_id = 0x560; //message used to send VIN to Panda
 
