@@ -181,7 +181,7 @@ class CarController(object):
 
     #if using radar, we need to send the VIN
     if CS.useTeslaRadar and (frame % 100 == 0):
-      can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,2,0x17c,CS.useTeslaRadar))
+      can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,2,0x17c,CS.useTeslaRadar,CS.radarPosition,CS.radarEpasType))
       self.radarVin_idx += 1
       self.radarVin_idx = self.radarVin_idx  % 3
 
