@@ -39,6 +39,22 @@ def read_config_file(CS):
       CS.radarOffset = 0.
       file_changed = True
     config.set('OP_CONFIG', 'radar_offset', CS.radarOffset)
+    
+    #radar_epas_type -> CS.radarEpasType
+    try:
+      CS.radarEpasType = configr.getint('OP_CONFIG','radar_epas_type')
+    except:
+      CS.radarEpasType = 0.
+      file_changed = True
+    config.set('OP_CONFIG', 'radar_epas_type', CS.radarEpasType)
+    
+    #radar_position -> CS.radarPosition
+    try:
+      CS.radarPosition = configr.getint('OP_CONFIG','radar_position')
+    except:
+      CS.radarPosition = 0
+      file_changed = True
+    config.set('OP_CONFIG', 'radar_position', CS.radarPosition)
 
     if file_changed:
       with open(config_path, config_file_w) as configfile:
@@ -51,6 +67,8 @@ class CarSettings(object):
     self.useTeslaRadar = False
     self.radarVIN = "                 "
     self.radarOffset = 0.
+    self.radarPosition = 0
+    self.radarEpasType = 0
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
