@@ -171,6 +171,8 @@ class CarState(object):
     self.useTeslaRadar = False
     self.radarVIN = "                 "
     self.radarOffset = 0.
+    self.radarPosition = 0
+    self.radarEpasType = 0
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
