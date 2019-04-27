@@ -109,7 +109,9 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
     int radarVin_b6 = ((to_send->RDHR >> 16) & 0xFF);
     int radarVin_b7 = ((to_send->RDHR >> 24) & 0xFF);
     if (id == 0) {
-      tesla_radar_should_send = radarVin_b2;
+      tesla_radar_should_send = radarVin_b2 & 0x01;
+      radarPosition =  ((radarVin_b2 >> 1) & 0x03;
+      radarEpasType = ((radarVin_b2 >> 3) & 0x07;
       tesla_radar_trigger_message_id = (radarVin_b3 << 8) + radarVin_b4;
       tesla_radar_can = radarVin_b1;
       radar_VIN[0] = radarVin_b5;
