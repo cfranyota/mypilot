@@ -9,6 +9,8 @@ int tesla_radar_counter = 0; //counter to determine when to send messages
 uint32_t tesla_radar_trigger_message_id = 0x17c; //id of the message
 int actual_speed_kph = 0; //use the rx_hook to set this to the car speed in kph; used by radar
 int tesla_radar_config_message_id = 0x560; //message used to send VIN to Panda
+int radarPosition = 0;
+int radarEpasType = 0;
 
 //message IDs and counters
 int tesla_radar_x2B9_id = 0;
@@ -205,7 +207,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
     if (tesla_radar_counter ==0) {
         //send 2A9
         MLB = 0x41431642;
-        MHB = 0x10020000;
+        MHB = 0x10020000 | (radarPosition << 4) | (radarEpasType << 12);
         if ((sizeof(radar_VIN) >= 4) && ((int)(radar_VIN[7]) == 0x32)) {
             //also change to AWD if needed (most likely) if manual VIN and if position 8 of VIN is a 2 (dual motor)
             MLB = MLB | 0x08;
