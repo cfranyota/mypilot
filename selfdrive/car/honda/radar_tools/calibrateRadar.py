@@ -13,7 +13,7 @@ from selfdrive.can.parser import CANParser
 from common.realtime import sec_since_boot
 from selfdrive.services import service_list
 import selfdrive.messaging as messaging
-from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
+from selfdrive.car.honda.readconfig import read_config_file,CarSettings
 
 #RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
 #RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
@@ -55,17 +55,18 @@ def _create_radard_can_parser():
 
   checks = zip(RADAR_A_MSGS + RADAR_B_MSGS, [20]*(msg_a_n + msg_b_n))
 
-  return CANParser(os.path.splitext(dbc_f)[0], signals, checks, 1)
+  return CANParser(os.path.splitext(dbc_f)[0], signals, checks, 2)
 
 
 class RadarInterface(object):
-  def __init__(self):
+  def __init__(self, CP):
     # radar
     self.pts = {}
     self.delay = 0.1
     self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
     self.TRACK_LEFT_LANE = True
     self.TRACK_RIGHT_LANE = True
+    self.radar_off_can = CP.radarOffCan
     if self.useTeslaRadar:
       self.pts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
@@ -77,7 +78,7 @@ class RadarInterface(object):
   def update(self):
 
     ret = car.RadarState.new_message()
-    if not self.useTeslaRadar:
+    if self.radar_off_can and (not self.useTeslaRadar):
       time.sleep(0.05)
       return ret
 
@@ -144,7 +145,11 @@ class RadarInterface(object):
 
 
 if __name__ == "__main__":
-  RI = RadarInterface()
+  class CarParams:
+    radarOffCan = False
+
+  CP = CarParams()
+  RI = RadarInterface(CP)
   while 1:
     ret = RI.update()
     print(chr(27) + "[2J")
