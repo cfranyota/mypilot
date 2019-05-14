@@ -219,9 +219,9 @@ class CarInterface(object):
         tire_stiffness_factor = 0.9
         ret.steerKf = 0.00004
       ret.longitudinalKpBP = [0., 5., 35.]
-      ret.longitudinalKpV = [3.6, 2.4, 1.5]
+      ret.longitudinalKpV = [4.0, 2.8, 1.9]
       ret.longitudinalKiBP = [0., 35.]
-      ret.longitudinalKiV = [0.54, 0.36]
+      ret.longitudinalKiV = [0.50, 0.32]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
@@ -369,9 +369,9 @@ class CarInterface(object):
 
     ret.gasMaxBP = [0.]  # m/s
     # TODO: what is the correct way to handle this?
-    ret.gasMaxV = [1.] #if ret.enableGasInterceptor else [0.] # max gas allowed
-    ret.brakeMaxBP = [5., 20.]  # m/s
-    ret.brakeMaxV = [1., 0.8]   # max brake allowed
+    ret.gasMaxV = [3.5] #if ret.enableGasInterceptor else [0.] # max gas allowed
+    ret.brakeMaxBP = [25., 50.]  # m/s
+    ret.brakeMaxV = [4.0, 3.6]   # max brake allowed
 
     ret.longPidDeadzoneBP = [0.]
     ret.longPidDeadzoneV = [0.]
