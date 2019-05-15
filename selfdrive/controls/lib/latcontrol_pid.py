@@ -2,7 +2,7 @@ from selfdrive.controls.lib.pid import PIController
 from selfdrive.controls.lib.drive_helpers import get_steer_max
 from cereal import car
 from cereal import log
-
+from common.realtime import sec_since_boot
 
 class LatControlPID(object):
   def __init__(self, CP):
@@ -24,11 +24,7 @@ class LatControlPID(object):
       pid_log.active = False
       self.pid.reset()
     else:
-      # TODO: ideally we should interp, but for tuning reasons we keep the mpc solution
-      # constant for 0.05s.
-      #dt = min(cur_time - self.angle_steers_des_time, _DT_MPC + _DT) + _DT  # no greater than dt mpc + dt, to prevent too high extraps
-      #self.angle_steers_des = self.angle_steers_des_prev + (dt / _DT_MPC) * (self.angle_steers_des_mpc - self.angle_steers_des_prev)
-      self.angle_steers_des = path_plan.angleSteers  # get from MPC/PathPlanner
+      self.angle_steers_des = interp(sec_since_boot(), path_plan.mpcTimes, path_plan.mpcAngles)
 
       steers_max = get_steer_max(CP, v_ego)
       self.pid.pos_limit = steers_max
