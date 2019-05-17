@@ -221,7 +221,7 @@ class CarInterface(object):
       ret.longitudinalKpBP = [0., 5., 35.]
       ret.longitudinalKpV = [4.0, 2.8, 1.9]
       ret.longitudinalKiBP = [0., 35.]
-      ret.longitudinalKiV = [0.50, 0.32]
+      ret.longitudinalKiV = [0.54, 0.36]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
@@ -367,11 +367,10 @@ class CarInterface(object):
     ret.steerMaxBP = [0.]  # m/s
     ret.steerMaxV = [1.]   # max steer allowed
 
-    ret.gasMaxBP = [0.]  # m/s
-    # TODO: what is the correct way to handle this?
-    ret.gasMaxV = [3.5] #if ret.enableGasInterceptor else [0.] # max gas allowed
-    ret.brakeMaxBP = [25., 50.]  # m/s
-    ret.brakeMaxV = [4.0, 3.6]   # max brake allowed
+    ret.gasMaxBP = [0., 9., 35.]  # m/s
+    ret.gasMaxV = [0.2, 0.5, 0.7] # percentage of gas
+    ret.brakeMaxBP = [5., 20.]  # m/s
+    ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
     ret.longPidDeadzoneBP = [0.]
     ret.longPidDeadzoneV = [0.]
