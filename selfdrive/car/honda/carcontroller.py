@@ -10,8 +10,8 @@ from selfdrive.can.packer import CANPacker
 
 # Accel limits
 ACCEL_HYST_GAP = 0.02 # don't change accel command for small oscilalitons within this value
-ACCEL_MAX = 3500.
-ACCEL_MIN = -4000.
+ACCEL_MAX = 2000.
+ACCEL_MIN = -1599.
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 
 def accel_hysteresis(accel, accel_steady, enabled):
@@ -33,9 +33,9 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   # hyst params
   brake_hyst_on = 0.02     # to activate brakes exceed this value
   brake_hyst_off = 0.005                     # to deactivate brakes below this value
-  brake_hyst_gap = 0.01                      # don't change brake command for small ocilalitons within this value
+  brake_hyst_gap = 0.01                      # don't change brake command for small oscillations within this value
 
-  #*** histeresis logic to avoid brake blinking. go above 0.1 to trigger
+  #*** hysteresis logic to avoid brake blinking. go above 0.1 to trigger
   if (brake < brake_hyst_on and not braking) or brake < brake_hyst_off:
     brake = 0.
   braking = brake > 0.
@@ -156,7 +156,7 @@ class CarController(object):
     # **** process the car messages ****
 
     # *** compute control surfaces ***
-    BRAKE_MAX = 1024/4
+    BRAKE_MAX = 1024
     if CS.CP.carFingerprint in (CAR.ACURA_ILX):
       STEER_MAX = 0xF00
     elif CS.CP.carFingerprint in (CAR.CRV, CAR.ACURA_RDX):
@@ -192,7 +192,7 @@ class CarController(object):
 
     # Send dashboard UI commands.
     if (frame % 10) == 0:
-      idx = (frame/10) % 4
+      idx = (frame//10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.radarOffCan and (not CS.useTeslaRadar), CS.CP.openpilotLongitudinalControl, idx))
 
     if not CS.CP.openpilotLongitudinalControl:
@@ -205,7 +205,7 @@ class CarController(object):
     else:
       # Send gas and brake commands.
       if (frame % 2) == 0:
-        idx = frame / 2
+        idx = frame // 2
 
         if CS.CP.carFingerprint in HONDA_BOSCH:
           can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, CS.CP.carFingerprint, idx))

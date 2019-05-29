@@ -23,13 +23,13 @@ AWARENESS_DECEL = -0.2     # car smoothly decel at .2m/s^2 when user is distract
 
 # lookup tables VS speed to determine min and max accels in cruise
 # make sure these accelerations are smaller than mpc limits
-_A_CRUISE_MIN_V  = [-.8, -.7, -.6, -.5, -.3]
+_A_CRUISE_MIN_V  = [-3.5, -3.3, -2.0, -1., -.69]
 _A_CRUISE_MIN_BP = [   0., 5.,  10., 20.,  40.]
 
 # need fast accel at very low speed for stop and go
 # make sure these accelerations are smaller than mpc limits
-_A_CRUISE_MAX_V = [3.5, 3.0, 1.5, .5, .3]
-_A_CRUISE_MAX_V_FOLLOWING = [3.5, 3.0, 1.5, .5, .3]
+_A_CRUISE_MAX_V = [4.8, 4.5, 3.65, 1.15, 1.1]
+_A_CRUISE_MAX_V_FOLLOWING = [5.3, 5.1, 3.8, 1.2, 1.1]
 _A_CRUISE_MAX_BP = [0., 5., 10., 20., 40.]
 
 # Lookup table for turns
@@ -152,7 +152,7 @@ class Planner(object):
 
     # Calculate speed for normal cruise control
     if enabled:
-      accel_limits = map(float, calc_cruise_accel_limits(v_ego, following))
+      accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego, following)]
       jerk_limits = [min(-0.1, accel_limits[0]), max(0.1, accel_limits[1])]  # TODO: make a separate lookup for jerk tuning
       accel_limits = limit_accel_in_turns(v_ego, CS.carState.steeringAngle, accel_limits, self.CP)
 

@@ -126,7 +126,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, o
     acc_hud_values = {
       'CRUISE_SPEED': hud.v_cruise,
       'ENABLE_MINI_CAR': hud.mini_car,
-      #'SET_TO_1': 0x01,
+      'SET_TO_1': 0x01,
       'HUD_LEAD': hud.car,
       'HUD_DISTANCE': 0x02,
       'ACC_ON': hud.car != 0,
@@ -168,7 +168,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, o
     }
   elif car_fingerprint in HONDA_BOSCH:
     radar_hud_values = {
-      #'SET_TO_1' : 0x01,
+      'SET_TO_1' : 0x01,
     }
 
   if openpilot_longitudinal_control:

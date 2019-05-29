@@ -113,7 +113,7 @@ class CarInterface(object):
 
     # normalized max accel. Allowing max accel at low speed causes speed overshoots
     max_accel_bp = [10, 20]    # m/s
-    max_accel_v = [0.714, 1.0] # unit of max accel
+    max_accel_v = [2.5, 1.3] # unit of max accel
     max_accel = interp(v_ego, max_accel_bp, max_accel_v)
 
     # limit the pcm accel cmd if:
@@ -219,7 +219,7 @@ class CarInterface(object):
         tire_stiffness_factor = 0.9
         ret.steerKf = 0.00004
       ret.longitudinalKpBP = [0., 5., 35.]
-      ret.longitudinalKpV = [4.0, 2.8, 1.9]
+      ret.longitudinalKpV = [3.6, 2.4, 1.5]
       ret.longitudinalKiBP = [0., 35.]
       ret.longitudinalKiV = [0.54, 0.36]
 
@@ -367,17 +367,17 @@ class CarInterface(object):
     ret.steerMaxBP = [0.]  # m/s
     ret.steerMaxV = [1.]   # max steer allowed
 
-    ret.gasMaxBP = [0., 9., 35.]  # m/s
-    ret.gasMaxV = [0.2, 0.5, 0.7] # percentage of gas
+    ret.gasMaxBP = [0.0, 1.4082, 2.80311, 4.22661, 5.38271, 6.16561, 7.24781, 8.28308, 10.24465, 12.96402, 15.42303, 18.11903, 20.11703, 24.46614, 29.05805, 32.71015, 35.76326]  # m/s
+    ret.gasMaxV = [0.55, 0.6, 0.63, 0.65, 0.66, 0.665, 0.67, 0.675, 0.68, 0.685, 0.688, 0.69, 0.695, 0.7, 0.71, 0.72, 0.73] # percentage of gas
     ret.brakeMaxBP = [5., 20.]  # m/s
-    ret.brakeMaxV = [1., 0.8]   # max brake allowed
+    ret.brakeMaxV = [4.5, 4.20]   # max brake allowed
 
     ret.longPidDeadzoneBP = [0.]
     ret.longPidDeadzoneV = [0.]
 
     ret.stoppingControl = True
     ret.steerLimitAlert = True
-    ret.startAccel = 0.5
+    ret.startAccel = 3.5
 
     ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 0.5
