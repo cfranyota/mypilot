@@ -4,10 +4,10 @@ from selfdrive.controls.lib.pid import PIController
 
 LongCtrlState = log.Live100Data.LongControlState
 
-STOPPING_EGO_SPEED = 2.0
+STOPPING_EGO_SPEED = 0.5
 MIN_CAN_SPEED = 0.3  # TODO: parametrize this in car interface
 STOPPING_TARGET_SPEED = MIN_CAN_SPEED + 0.01
-STARTING_TARGET_SPEED = 2.0
+STARTING_TARGET_SPEED = 0.5
 BRAKE_THRESHOLD_TO_PID = 0.2
 
 STOPPING_BRAKE_RATE = 0.5  # brake_travel/s while trying to stop
