@@ -55,7 +55,7 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   return brake, braking, brake_steady
 
 
-def brake_pump_hysteresys(apply_brake, apply_brake_last, last_pump_ts):
+def brake_pump_hysteresis(apply_brake, apply_brake_last, last_pump_ts):
   ts = sec_since_boot()
   pump_on = False
 
@@ -147,7 +147,7 @@ class CarController(object):
     if CS.CP.radarOffCan:
       snd_beep = snd_beep if snd_beep != 0 else snd_chime
 
-    #print chime, alert_id, hud_alert
+    #print("{0} {1} {2}".format(chime, alert_id, hud_alert))
     fcw_display, steer_required, acc_alert = process_hud_alert(hud_alert)
 
     hud = HUDData(int(pcm_accel), int(round(hud_v_cruise)), 1, hud_car,
@@ -156,7 +156,7 @@ class CarController(object):
     # **** process the car messages ****
 
     # *** compute control surfaces ***
-    BRAKE_MAX = 1024/4
+    BRAKE_MAX = 1024//4
     if CS.CP.carFingerprint in (CAR.ACURA_ILX):
       STEER_MAX = 0xF00
     elif CS.CP.carFingerprint in (CAR.CRV, CAR.ACURA_RDX):
@@ -219,4 +219,4 @@ class CarController(object):
           # This prevents unexpected pedal range rescaling
           can_sends.append(create_gas_command(self.packer, apply_gas, idx))
 
-    sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan').to_bytes())
+    sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan'))

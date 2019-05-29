@@ -160,6 +160,9 @@ static void toyota_init(int16_t param) {
   toyota_giraffe_switch_1 = 0;
   toyota_camera_forwarded = 0;
   toyota_dbc_eps_torque_factor = param;
+  #ifdef PANDA
+    lline_relay_release();
+  #endif
 }
 
 static int toyota_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
@@ -169,7 +172,9 @@ static int toyota_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   if ((bus_num == 0 || bus_num == 2) && toyota_camera_forwarded && !toyota_giraffe_switch_1) {
     int addr = to_fwd->RIR>>21;
     bool is_lkas_msg = (addr == 0x2E4 || addr == 0x412) && bus_num == 2;
-    return is_lkas_msg? -1 : (uint8_t)(~bus_num & 0x2);
+    // in TSSP 2.0 the camera does ACC as well, so filter 0x343
+    bool is_acc_msg = (addr == 0x343 && bus_num  == 2);
+    return (is_lkas_msg || is_acc_msg)? -1 : (uint8_t)(~bus_num & 0x2);
   }
   return -1;
 }
@@ -181,6 +186,7 @@ const safety_hooks toyota_hooks = {
   .tx_lin = nooutput_tx_lin_hook,
   .ignition = default_ign_hook,
   .fwd = toyota_fwd_hook,
+  .relay = nooutput_relay_hook,
 };
 
 static void toyota_nolimits_init(int16_t param) {
@@ -189,6 +195,9 @@ static void toyota_nolimits_init(int16_t param) {
   toyota_giraffe_switch_1 = 0;
   toyota_camera_forwarded = 0;
   toyota_dbc_eps_torque_factor = param;
+  #ifdef PANDA
+    lline_relay_release();
+  #endif
 }
 
 const safety_hooks toyota_nolimits_hooks = {
@@ -198,4 +207,5 @@ const safety_hooks toyota_nolimits_hooks = {
   .tx_lin = nooutput_tx_lin_hook,
   .ignition = default_ign_hook,
   .fwd = toyota_fwd_hook,
+  .relay = nooutput_relay_hook,
 };
