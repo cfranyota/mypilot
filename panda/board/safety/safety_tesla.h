@@ -230,9 +230,6 @@ static void tesla_init(int16_t param)
   controls_allowed = 0;
   tesla_ignition_started = 0;
   gmlan_switch_init(1); //init the gmlan switch with 1s timeout enabled
-  #ifdef PANDA
-    lline_relay_release();
-  #endif
 }
 
 static int tesla_ign_hook()
@@ -287,5 +284,4 @@ const safety_hooks tesla_hooks = {
     .tx_lin = tesla_tx_lin_hook,
     .ignition = tesla_ign_hook,
     .fwd = tesla_fwd_hook,
-    .relay = nooutput_relay_hook,
 };
