@@ -103,7 +103,7 @@ def create_acc_commands(packer, enabled, accel, fingerprint, idx):
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", 0, acc_control_on_values, idx))
   
   #Civic Bosch needs a blank 0x1fa for POWERTRAIN_DATA>ACC_STATUS to be set to 1
-  if fingerprint == CAR.CIVIC_BOSCH:
+  if fingerprint == CAR.CIVIC_BOSCH or fingerprint == CAR.ACCORD or fingerprint == CAR.ACCORD_15:
     blank_values = {}
     commands.append(packer.make_can_msg("BLANK_1FA", 0, blank_values, idx))
 
