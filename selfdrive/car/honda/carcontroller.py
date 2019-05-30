@@ -217,6 +217,8 @@ class CarController(object):
         if CS.CP.enableGasInterceptor:
           # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.
           # This prevents unexpected pedal range rescaling
+          if apply_gas == 0 and CS.hud_lead == 1:
+            can_sends.append(create_gas_command(self.packer, 5, idx))
           can_sends.append(create_gas_command(self.packer, apply_gas, idx))
 
     sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan'))
