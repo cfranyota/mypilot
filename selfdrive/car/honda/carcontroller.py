@@ -135,13 +135,13 @@ class CarController(object):
     else:
       hud_lanes = 0
 
-    #if enabled:
-    if hud_show_car:
-      hud_car = 2
+    if enabled:
+      if hud_show_car:
+        hud_car = 2
+      else:
+        hud_car = 1
     else:
-      hud_car = 1
-    #else:
-    #  hud_car = 0
+      hud_car = 0
 
     # For lateral control-only, send chimes as a beep since we don't send 0x1fa
     if CS.CP.radarOffCan:
