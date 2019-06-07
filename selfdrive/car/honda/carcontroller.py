@@ -135,13 +135,11 @@ class CarController(object):
     else:
       hud_lanes = 0
 
-    if enabled:
-      if hud_show_car:
-        hud_car = 2
-      else:
-        hud_car = 1
+    # Always detect lead car on HUD even without ACC engaged
+    if hud_show_car:
+      hud_car = 2
     else:
-      hud_car = 0
+      hud_car = 1
 
     # For lateral control-only, send chimes as a beep since we don't send 0x1fa
     if CS.CP.radarOffCan:
