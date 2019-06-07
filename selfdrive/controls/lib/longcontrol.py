@@ -10,8 +10,8 @@ STOPPING_TARGET_SPEED = MIN_CAN_SPEED + 0.01
 STARTING_TARGET_SPEED = 0.5
 BRAKE_THRESHOLD_TO_PID = 0.2
 
-STOPPING_BRAKE_RATE = 0.5  # brake_travel/s while trying to stop
-STARTING_BRAKE_RATE = 0.5  # brake_travel/s while releasing on restart
+STOPPING_BRAKE_RATE = 0.2  # brake_travel/s while trying to stop
+STARTING_BRAKE_RATE = 0.8  # brake_travel/s while releasing on restart
 # TODO: bosch sends max value to hold at standstill
 BRAKE_STOPPING_TARGET = 1.8 # 0.5  # apply at least this amount of brake to maintain the vehicle stationary
 
