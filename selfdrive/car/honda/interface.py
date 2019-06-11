@@ -221,7 +221,6 @@ class CarInterface(object):
       ret.longitudinalTuning.kpV = [4.0, 2.85, 1.55]
       ret.longitudinalTuning.kiBP = [0., 5., 35.]
       ret.longitudinalTuning.kiV = [0.56, 0.54, 0.32]
-
     elif candidate == CAR.INSIGHT:
       stop_and_go = True
       ret.mass = 2987. * CV.LB_TO_KG + std_cargo
