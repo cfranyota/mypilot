@@ -1,0 +1,1 @@
+clang++ -lSNPE -lsymphony-cpu -lsymphonypower -I/data/openpilot/phonelibs/snpe/include -std=c++14 -fPIC -o d_f.so dynamic_follow.cc -shared

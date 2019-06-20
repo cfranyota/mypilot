@@ -75,6 +75,7 @@ liveMapData: [8065, true]
 cameraOdometry: [8066, true]
 pathPlan: [8067, true]
 kalmanOdometry: [8068, true]
+dynamicFollowData: [8069, true]
 
 testModel: [8040, false]
 testLiveLocation: [8045, false]

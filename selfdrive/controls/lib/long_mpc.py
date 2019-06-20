@@ -9,7 +9,8 @@ from selfdrive.controls.lib.drive_helpers import MPC_COST_LONG
 from scipy import interpolate
 from common.numpy_fast import interp
 import math
-
+import os
+import time
 
 class LongitudinalMpc(object):
   def __init__(self, mpc_id, live_longitudinal_mpc):
@@ -24,6 +25,8 @@ class LongitudinalMpc(object):
     self.prev_lead_status = False
     self.prev_lead_x = 0.0
     self.new_lead = False
+    self.df_data = []
+    self.mpc_frames = 0
 
     self.last_cloudlog_t = 0.0
 
@@ -180,19 +183,15 @@ class LongitudinalMpc(object):
 
   def update(self, CS, lead, v_cruise_setpoint):
     v_ego = CS.carState.vEgo
-
-    try:
-      self.relative_velocity = lead.vRel
-      self.relative_distance = lead.dRel
-    except:
-      self.relative_velocity = None
-      self.relative_distance = None
-
+    a_ego = CS.carState.aEgo
+    gas = CS.carState.gas
+    brake = CS.carState.brake
     # Setup current mpc state
     self.cur_state[0].x_ego = 0.0
 
     if lead is not None and lead.status:
-      x_lead = max(0, lead.dRel - 1)
+      self.mpc_frames += 1
+      x_lead = lead.dRel
       v_lead = max(0.0, lead.vLead)
       a_lead = lead.aLeadK
 
@@ -200,7 +199,18 @@ class LongitudinalMpc(object):
         v_lead = 0.0
         a_lead = 0.0
 
-      self.a_lead_tau = max(lead.aLeadTau, (a_lead ** 2 * math.pi) / (2 * (v_lead + 0.01) ** 2))
+      if self.mpc_id == 1 and not CS.carState.cruiseState.enabled:
+        self.df_data.append([v_ego, a_ego, v_lead, x_lead, a_lead, gas, brake, time.time()])
+        if self.mpc_frames >= 400:  # every 10 seconds, write to file
+          try:
+            with open("/data/openpilot/selfdrive/df/df-data", "a") as f:
+              f.write("\n".join([str(i) for i in self.df_data]) + "\n")
+            self.df_data = []
+            self.mpc_frames = 0
+          except:
+            pass
+
+      self.a_lead_tau = lead.aLeadTau
       self.new_lead = False
       if not self.prev_lead_status or abs(x_lead - self.prev_lead_x) > 2.5:
         self.libmpc.init_with_simulation(self.v_mpc, x_lead, v_lead, a_lead, self.a_lead_tau)
