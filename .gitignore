@@ -34,3 +34,5 @@ selfdrive/visiond/visiond
 /src/
 
 one
+openpilot
+selfdrive/df/df-data
