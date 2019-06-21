@@ -277,11 +277,11 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
   a_acc_sol = plan.aStart + (dt / _DT_MPC) * (plan.aTarget - plan.aStart)
   v_acc_sol = plan.vStart + dt * (a_acc_sol + plan.aStart) / 2.0
 
-  v_ego_scale = [-0.09130645543336868, 41.05433654785156]
+  v_ego_scale = [-0.2154252678155899, 41.05433654785156]
   #a_ego_scale = [-4.493537902832031, 3.710982322692871]
-  v_lead_scale = [0.0, 48.66924285888672]
-  x_lead_scale = [0.125, 138.625]
-  a_lead_scale = [-4.993380546569824, 4.991139888763428]
+  v_lead_scale = [0.0, 48.58272933959961]
+  x_lead_scale = [0.125, 144.125]
+  a_lead_scale = [-8.398388862609863, 9.994253158569336]
 
   v_lead = 20.0
   x_lead = 20.0
