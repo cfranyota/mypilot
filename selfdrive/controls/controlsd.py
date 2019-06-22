@@ -290,7 +290,7 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
   if live20 is not None:
     lead_1 = live20.live20.leadOne
     if lead_1 is not None and lead_1.status:
-      x_lead = lead_1.dRel
+      x_lead = lead_1.dRel+1
       v_lead = lead_1.vLead-1
       a_lead = lead_1.aLeadK
       has_lead = True
