@@ -290,7 +290,7 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
   if live20 is not None:
     lead_1 = live20.live20.leadOne
     if lead_1 is not None and lead_1.status:
-      x_lead = lead_1.dRel+1
+      x_lead = lead_1.dRel+2
       v_lead = lead_1.vLead-1
       a_lead = lead_1.aLeadK
       has_lead = True
@@ -313,8 +313,9 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
       actuators.gas = 0.0
       actuators.brake = 0.0'''
   # Gas/Brake PID loop
-  actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
-                                              v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
+  else:
+    actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
+                                                v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
 
   # Steering PID loop and lateral MPC
   actuators.steer, actuators.steerAngle, lac_log = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate,
