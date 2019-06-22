@@ -291,7 +291,7 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
     lead_1 = live20.live20.leadOne
     if lead_1 is not None and lead_1.status:
       x_lead = lead_1.dRel
-      v_lead = lead_1.vLead
+      v_lead = lead_1.vLead-1
       a_lead = lead_1.aLeadK
       has_lead = True
 
@@ -299,7 +299,7 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
     #model_output = float(libmpc.run_model(norm(CS.vEgo, v_ego_scale), norm(CS.aEgo, a_ego_scale), norm(v_lead, v_lead_scale), norm(x_lead, x_lead_scale), norm(a_lead, a_lead_scale)))
     model_output = float(libmpc.run_model(norm(CS.vEgo, v_ego_scale), norm(v_lead, v_lead_scale), norm(x_lead, x_lead_scale), norm(a_lead, a_lead_scale)))
 
-    model_output = clip((model_output - 0.55) * 3.65, -1.0, 1.0)
+    model_output = clip((model_output - 0.51) * 4.0, -1.0, 1.0)
     #model_output = (model_output - 0.5) * 2.0
 
     actuators.gas = max(model_output, 0.0)
@@ -312,10 +312,9 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
     '''else:
       actuators.gas = 0.0
       actuators.brake = 0.0'''
-  else:
-    # Gas/Brake PID loop
-    actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
-                                                v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
+  # Gas/Brake PID loop
+  actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
+                                              v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
 
   # Steering PID loop and lateral MPC
   actuators.steer, actuators.steerAngle, lac_log = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate,
