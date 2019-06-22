@@ -230,10 +230,10 @@ class CarInterface(object):
       ret.steerRatio = 15  # 12.58 is spec end-to-end
       tire_stiffness_factor = 0.82
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.18]]
-      ret.longitudinalKpBP = [0., 5., 35.]
-      ret.longitudinalKpV = [3.6, 2.4, 1.5]
-      ret.longitudinalKiBP = [0., 35.]
-      ret.longitudinalKiV = [0.54, 0.36]
+      ret.longitudinalkpBP = [0., 5., 35.]
+      ret.longitudinalkpV = [3.6, 2.4, 1.5]
+      ret.longitudinalkiBP = [0., 35.]
+      ret.longitudinalkiV = [0.54, 0.36]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
