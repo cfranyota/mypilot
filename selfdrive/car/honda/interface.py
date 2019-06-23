@@ -231,9 +231,9 @@ class CarInterface(object):
       tire_stiffness_factor = 0.82
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.18]]
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [3.6, 2.4, 1.5]
+      ret.longitudinalTuning.kpV = 2.4, 1.2, 0.8]
       ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.54, 0.36]
+      ret.longitudinalTuning.kiV = [0.18, 0.12]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
@@ -379,10 +379,10 @@ class CarInterface(object):
     ret.steerMaxBP = [0.]  # m/s
     ret.steerMaxV = [1.]   # max steer allowed
 
-    ret.gasMaxBP = [0., 3, 8, 35]
-    ret.gasMaxV = [0.2, 0.3, 0.5, 0.6]
+    ret.gasMaxBP = [0., 3, 8, 18, 35]
+    ret.gasMaxV = [0.2, 0.3, 0.4, 0.5, 0.6]
     ret.brakeMaxBP = [5., 20.]  # m/s
-    ret.brakeMaxV = [1.2, 1.]   # max brake allowed
+    ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
     ret.longitudinalTuning.deadzoneBP = [0.]
     ret.longitudinalTuning.deadzoneV = [0.]
