@@ -101,10 +101,10 @@ class LongitudinalMpc(object):
     x_vel = [0.0, 1.86267, 3.72533, 5.588, 7.45067, 9.31333, 11.55978, 13.645, 22.352, 31.2928, 33.528, 35.7632, 40.2336]  # velocity
     y_mod = [0.5, 0.6, 0.69, .8, .92, .98, .99, 1., 1.1, 1.15, 1.18, 1.26, 1.32]  # distances
 
-    stop_and_go_magic_number = 8.9408  # 20 mph
+    stop_and_go_magic_number = 4.4704  # 10 mph
 
-    if velocity <= 0.044704:  # .1 mph
-      self.stop_and_go = False
+    if velocity <= 0.89408:  # 2 mph
+      self.stop_and_go = True
     elif velocity >= stop_and_go_magic_number:
       self.stop_and_go = False
 
