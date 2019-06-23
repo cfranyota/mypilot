@@ -277,45 +277,35 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
   a_acc_sol = plan.aStart + (dt / _DT_MPC) * (plan.aTarget - plan.aStart)
   v_acc_sol = plan.vStart + dt * (a_acc_sol + plan.aStart) / 2.0
 
-  v_ego_scale = [-0.2154252678155899, 41.05433654785156]
+#  v_ego_scale = [-0.2154252678155899, 41.05433654785156]
   #a_ego_scale = [-4.493537902832031, 3.710982322692871]
-  v_lead_scale = [0.0, 48.58272933959961]
-  x_lead_scale = [0.125, 144.125]
-  a_lead_scale = [-8.398388862609863, 9.994253158569336]
+#  v_lead_scale = [0.0, 48.58272933959961]
+#  x_lead_scale = [0.125, 144.125]
+#  a_lead_scale = [-8.398388862609863, 9.994253158569336]
 
-  v_lead = 20.0
-  x_lead = 20.0
-  a_lead = 0.0
-  has_lead = False
-  if live20 is not None:
-    lead_1 = live20.live20.leadOne
-    if lead_1 is not None and lead_1.status:
-      x_lead = lead_1.dRel+2
-      v_lead = lead_1.vLead-1
-      a_lead = lead_1.aLeadK
-      has_lead = True
+#  v_lead = 20.0
+#  x_lead = 20.0
+#  a_lead = 0.0
+#  has_lead = False
+#  if live20 is not None:
+#    lead_1 = live20.live20.leadOne
+#    if lead_1 is not None and lead_1.status:
+#      x_lead = lead_1.dRel
+#      v_lead = lead_1.vLead
+#      a_lead = lead_1.aLeadK
+#      has_lead = True
 
-  if has_lead:
-    #model_output = float(libmpc.run_model(norm(CS.vEgo, v_ego_scale), norm(CS.aEgo, a_ego_scale), norm(v_lead, v_lead_scale), norm(x_lead, x_lead_scale), norm(a_lead, a_lead_scale)))
-    model_output = float(libmpc.run_model(norm(CS.vEgo, v_ego_scale), norm(v_lead, v_lead_scale), norm(x_lead, x_lead_scale), norm(a_lead, a_lead_scale)))
-
-    model_output = clip((model_output - 0.51) * 4.0, -1.0, 1.0)
-    #model_output = (model_output - 0.5) * 2.0
-
-    actuators.gas = max(model_output, 0.0)
-    actuators.brake = -min(model_output, 0.0)
-    '''data = messaging.new_message()
-    data.init('dynamicFollowData')
-    data.dynamicFollowData.gas = max(model_output, 0.0)
-    data.dynamicFollowData.brake = -min(model_output, 0.0)
-    dynamic_follow_sock.send(data.to_bytes())'''
-    '''else:
-      actuators.gas = 0.0
-      actuators.brake = 0.0'''
+#  if has_lead:
+#    model_output = float(libmpc.run_model(norm(CS.vEgo, v_ego_scale), norm(v_lead, v_lead_scale), norm(x_lead, x_lead_scale), norm(a_lead, a_lead_scale)))
+#
+#    model_output = clip((model_output - 0.51) * 4.0, -1.0, 1.0)
+#
+#    actuators.gas = max(model_output, 0.0)
+#    actuators.brake = -min(model_output, 0.0)
   # Gas/Brake PID loop
-  else:
-    actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
-                                                v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
+#  else:
+  actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
+                                              v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
 
   # Steering PID loop and lateral MPC
   actuators.steer, actuators.steerAngle, lac_log = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate,
