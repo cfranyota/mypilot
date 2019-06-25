@@ -130,8 +130,8 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, o
       'HUD_LEAD': hud.car,
       'HUD_DISTANCE': 0x02,
       'ACC_ON': hud.car != 0,
-      'SET_TO_X3': hud.dist_lines,
-      'SET_ME_X03_2': hud.speed_units,
+      'SET_TO_X3': 0x03,
+      'SET_ME_X03_2': 0x03,
     }
   else:
     acc_hud_values = {
