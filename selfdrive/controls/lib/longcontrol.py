@@ -1,9 +1,6 @@
-import zmq
 from cereal import log
 from common.numpy_fast import clip, interp
 from selfdrive.controls.lib.pid import PIController
-import selfdrive.messaging as messaging
-from selfdrive.services import service_list
 
 LongCtrlState = log.Live100Data.LongControlState
 
@@ -69,10 +66,6 @@ class LongControl(object):
                             convert=compute_gb)
     self.v_pid = 0.0
     self.last_output_gb = 0.0
-
-    context = zmq.Context()
-    self.poller = zmq.Poller()
-    self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
 
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
