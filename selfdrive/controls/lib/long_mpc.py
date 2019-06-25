@@ -68,16 +68,17 @@ class LongitudinalMpc(object):
     return generatedTR
 
   def get_traffic_level(self, lead_vels):  # generate a value to modify TR by based on fluctuations in lead speed
-    if len(lead_vels) < 40:
+    if len(lead_vels) < 20:
       return 1.0  # if less than 20 seconds of traffic data do nothing to TR
     lead_vel_diffs = []
-    for idx, vel in enumerate(lead_vels):
-      if idx != 0:
-        lead_vel_diffs.append(abs(vel - lead_vels[idx - 1]))
-    x = [0, len(lead_vels)]
-    y = [1.35, 1.0]  # min and max values to modify TR by
-    traffic = interp(sum(lead_vel_diffs), x, y)
-    return traffic
+    lead_vel_diffs = [abs(vel - lead_vels[idx - 1]) for idx, vel in enumerate(lead_vels) if idx != 0]
+    x = [0.0, 0.21, 0.466, 0.722, 0.856, 0.96, 1.0]  # 1 is estimated to be heavy traffic
+    y = [1.2, 1.19, 1.17, 1.13, 1.09, 1.04, 1.0]
+    traffic_mod = interp(sum(lead_vel_diffs)/len(lead_vel_diffs), x, y)
+    x = [20.1168, 24.5872]  # min speed is 45mph for traffic level mod
+    y = [0.2, 0.0]
+    traffic_mod = max(traffic_mod - interp(self.v_ego, x, y), 1.0)
+    return traffic_mod
 
   def get_acceleration(self, velocity_list, is_self):  # calculate acceleration to generate more accurate following distances
     if is_self:
@@ -98,8 +99,8 @@ class LongitudinalMpc(object):
     return a
 
   def dynamic_follow(self, velocity):  # in m/s
-    x_vel = [0.0, 1.86267, 3.72533, 5.588, 7.45067, 9.31333, 11.55978, 13.645, 22.352, 31.2928, 33.528, 35.7632, 40.2336]  # velocity
-    y_mod = [0.5, 0.6, 0.69, .8, .92, .98, .99, 1., 1.1, 1.15, 1.18, 1.26, 1.32]  # distances
+    x_vel = [0.0, 5.222, 11.164, 14.937, 20.973, 33.975, 42.469]
+    y_mod = [1.542, 1.553, 1.599, 1.68, 1.75, 1.855, 1.9]
 
     stop_and_go_magic_number = 4.4704  # 10 mph
 
@@ -116,8 +117,8 @@ class LongitudinalMpc(object):
       TR = interpolate.interp1d(x_vel, y_mod, fill_value='extrapolate')(velocity)[()]  # extrapolate above 90 mph
 
     if self.relative_velocity is not None:
-      x = [-15.6464, -11.62306, -7.84278, -5.45002, -4.37006, -3.21869, -1.72406, -0.91097, -0.49174, 0.0, 0.26822, 0.77499, 1.85325, 2.68511]  # relative velocity values
-      y = [0.56, 0.5, 0.422, 0.336, 0.28, 0.21, 0.16, 0.112, 0.06502, 0, -0.0554, -0.1371, -0.2402, -0.3004]  # modification values
+      x = [0, 0.61, 1.26, 2.1, 2.68]  # relative velocity values
+      y = [0, -0.017, -0.053, -0.154, -0.272]  # modification values
       TR_mod = interp(self.relative_velocity, x, y)  # factor in lead relative velocity
 
       x = [-4.4704, -2.2352, -0.8941, 0.0, 1.3411]  # self acceleration values
