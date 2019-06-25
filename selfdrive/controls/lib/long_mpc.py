@@ -86,6 +86,24 @@ class LongitudinalMpc(object):
     traffic_mod = max(traffic_mod - interp(self.v_ego, x, y), 1.0)
     return traffic_mod
 
+  def get_acceleration(self, velocity_list, is_self):  # calculate acceleration to generate more accurate following distances
+    if is_self:
+      a = (velocity_list[-1] - velocity_list[0]) / (len(velocity_list) / 100.0)
+    else:
+      if len(velocity_list) >= 300:
+        a_short = (velocity_list[-1] - velocity_list[-150]) / 1.5  # calculate lead accel last 1.5 s
+        a_long = (velocity_list[-1] - velocity_list[-300]) / 3.0  # divide difference in velocity by how long in sec we're tracking velocity
+
+        if abs(sum([a_short, a_long])) < 0.22352:  # if abs(sum) is less than .5 mph/s, average the two
+          a = (a_short + a_long) / 2.0
+        elif sum([a_short, a_long]) >= 0:  # return value furthest from 0
+          a = max([a_short, a_long])
+        else:
+          a = min([a_short, a_long])
+      else:
+        a = (velocity_list[-1] - velocity_list[0]) / (len(velocity_list) / 100.0)
+    return a
+
   def send_mpc_solution(self, qp_iterations, calculation_time):
     qp_iterations = max(0, qp_iterations)
     dat = messaging.new_message()
