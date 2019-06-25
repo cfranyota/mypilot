@@ -136,7 +136,7 @@ class CarController(object):
     self.brake_last = rate_limit(brake, self.brake_last, -2., 1./100)
 
     # vehicle hud display, wait for one update from 10Hz 0x304 msg
-    if hud_show_lanes:
+    if hud_show_lanesand CS.lkMode:
       hud_lanes = 1
     else:
       hud_lanes = 0
@@ -150,6 +150,12 @@ class CarController(object):
     # For lateral control-only, send chimes as a beep since we don't send 0x1fa
     if CS.CP.radarOffCan:
       snd_beep = snd_beep if snd_beep != 0 else snd_chime
+
+    # Do not send audible alert when steering is disabled
+    if not CS.lkMode:
+      snd_beep = 0
+      snd_chime = 0
+
 
     #print("{0} {1} {2}".format(chime, alert_id, hud_alert))
     fcw_display, steer_required, acc_alert = process_hud_alert(hud_alert)
