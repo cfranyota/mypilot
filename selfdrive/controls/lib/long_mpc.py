@@ -9,6 +9,7 @@ from selfdrive.controls.lib.drive_helpers import MPC_COST_LONG
 from scipy import interpolate
 from common.numpy_fast import interp
 import math
+import time
 
 class LongitudinalMpc(object):
   def __init__(self, mpc_id, live_longitudinal_mpc):
