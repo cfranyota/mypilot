@@ -195,14 +195,14 @@ class CarInterface(object):
       tire_stiffness_factor = 1.
       # Civic at comma has modified steering FW, so different tuning for the Neo in that car
       is_fw_modified = os.getenv("DONGLE_ID") in ['99c94dc769b5d96e']
-      ret.steerKpV, ret.steerKiV = [[0.4], [0.12]] if is_fw_modified else [[0.8], [0.24]]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.12]] if is_fw_modified else [[0.8], [0.24]]
       if is_fw_modified:
         tire_stiffness_factor = 0.9
-        ret.steerKf = 0.00004
-      ret.longitudinalKpBP = [0., 5., 35.]
-      ret.longitudinalKpV = [3.6, 2.4, 1.5]
-      ret.longitudinalKiBP = [0., 35.]
-      ret.longitudinalKiV = [0.54, 0.36]
+        ret.lateralTuning.pid.kf = 0.00004
+      ret.longitudinalTuning.kpBP = [0., 5., 35.]
+      ret.longitudinalTuning.kpV = [3.6, 2.4, 1.5]
+      ret.longitudinalTuning.kiBP = [0., 35.]
+      ret.longitudinalTuning.kiV = [0.54, 0.36]
 
     elif candidate in [CAR.CIVIC_BOSCH]:
       stop_and_go = True
