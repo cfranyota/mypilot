@@ -9,8 +9,6 @@ from selfdrive.controls.lib.drive_helpers import MPC_COST_LONG
 from scipy import interpolate
 from common.numpy_fast import interp
 import math
-import os
-import time
 
 class LongitudinalMpc(object):
   def __init__(self, mpc_id, live_longitudinal_mpc):
@@ -25,8 +23,6 @@ class LongitudinalMpc(object):
     self.prev_lead_status = False
     self.prev_lead_x = 0.0
     self.new_lead = False
-    self.df_data = []
-    self.mpc_frames = 0
 
     self.last_cloudlog_t = 0.0
 
@@ -68,17 +64,19 @@ class LongitudinalMpc(object):
     return generatedTR
 
   def get_traffic_level(self, lead_vels):  # generate a value to modify TR by based on fluctuations in lead speed
-    if len(lead_vels) < 20:
+    if len(lead_vels) < 40:
       return 1.0  # if less than 20 seconds of traffic data do nothing to TR
     lead_vel_diffs = []
-    lead_vel_diffs = [abs(vel - lead_vels[idx - 1]) for idx, vel in enumerate(lead_vels) if idx != 0]
+    for idx, vel in enumerate(lead_vels):
+      if idx != 0:
+        lead_vel_diffs.append(abs(vel - lead_vels[idx - 1]))
     x = [0.0, 0.21, 0.466, 0.722, 0.856, 0.96, 1.0]  # 1 is estimated to be heavy traffic
     y = [1.2, 1.19, 1.17, 1.13, 1.09, 1.04, 1.0]
     traffic_mod = interp(sum(lead_vel_diffs)/len(lead_vel_diffs), x, y)
     x = [20.1168, 24.5872]  # min speed is 45mph for traffic level mod
     y = [0.2, 0.0]
-    traffic_mod = max(traffic_mod - interp(self.v_ego, x, y), 1.0)
-    return traffic_mod
+    traffic = max(traffic_mod - interp(self.v_ego, x, y), 1.0)
+    return traffic
 
   def get_acceleration(self, velocity_list, is_self):  # calculate acceleration to generate more accurate following distances
     if is_self:
