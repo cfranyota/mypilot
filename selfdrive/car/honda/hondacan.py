@@ -103,7 +103,11 @@ def create_acc_commands(packer, enabled, accel, fingerprint, idx):
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", 0, acc_control_on_values, idx))
   
   #Civic Bosch needs a blank 0x1fa for POWERTRAIN_DATA>ACC_STATUS to be set to 1
+<<<<<<< HEAD
   if fingerprint == CAR.CIVIC_BOSCH:
+=======
+  if fingerprint == CAR.CIVIC_BOSCH or fingerprint == CAR.ACCORD or fingerprint == CAR.ACCORD_15:
+>>>>>>> 5e4407cd... no insight
     blank_values = {}
     commands.append(packer.make_can_msg("BLANK_1FA", 0, blank_values, idx))
 
@@ -138,11 +142,16 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, o
       'PCM_GAS': hud.pcm_accel,
       'CRUISE_SPEED': hud.v_cruise,
       'ENABLE_MINI_CAR': hud.mini_car,
+<<<<<<< HEAD
       'SET_ME_X03': hud.dist_lines,
       'SET_ME_X03_2': hud.speed_units,
       'HUD_LEAD': hud.car,
+=======
+      'HUD_LEAD': hud.car,
+      'SET_ME_X03': 0x03,
+      'SET_ME_X03_2': 0x03,
+>>>>>>> 5e4407cd... no insight
       'SET_ME_X01': 0x01,
-      'HUD_DISTANCE_3': 1,
     }
 
   if openpilot_longitudinal_control:
@@ -153,7 +162,6 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, o
     'SET_ME_X48': 0x48,
     'STEERING_REQUIRED': hud.steer_required,
     'SOLID_LANES': hud.lanes,
-    'DASHED_LANES': hud.dashed_lanes,
     'BEEP': hud.beep,
   }
   # Bosch sends commands to bus 2.

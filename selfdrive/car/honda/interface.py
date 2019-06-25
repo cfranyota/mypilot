@@ -222,6 +222,7 @@ class CarInterface(object):
       ret.longitudinalTuning.kiBP = [0., 5., 35.]
       ret.longitudinalTuning.kiV = [0.56, 0.54, 0.32]
 
+<<<<<<< HEAD
     elif candidate == CAR.INSIGHT:
       stop_and_go = True
       ret.mass = 2987. * CV.LB_TO_KG + std_cargo
@@ -235,6 +236,8 @@ class CarInterface(object):
       ret.longitudinalTuning.kiBP = [0., 5., 20., 35.]
       ret.longitudinalTuning.kiV = [0.18, 0.192, 0.18, 0.22]
 
+=======
+>>>>>>> 5e4407cd... no insight
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
       if not candidate == CAR.ACCORDH: # Hybrid uses same brake msg as hatch
