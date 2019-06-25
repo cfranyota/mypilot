@@ -13,7 +13,7 @@
 #include <fstream>
 
 extern "C"{
-  float run_model(float v_ego, float v_lead, float x_lead, float a_lead);
+  float run_model(float v_ego, float a_ego, float v_lead, float x_lead, float a_lead);
   void init_model();
 }
 
