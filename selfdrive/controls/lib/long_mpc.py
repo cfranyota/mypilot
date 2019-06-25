@@ -234,8 +234,8 @@ class LongitudinalMpc(object):
           except Exception,e:
             pass
 
-      self.v_lead = v_lead
-      self.x_lead = x_lead
+      self.v_lead = v_lead-2
+      self.x_lead = x_lead-1
       self.a_lead_tau = lead.aLeadTau
       self.new_lead = False
       if not self.prev_lead_status or abs(x_lead - self.prev_lead_x) > 2.5:
