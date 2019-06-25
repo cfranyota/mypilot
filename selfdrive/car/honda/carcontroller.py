@@ -12,7 +12,7 @@ from common.params import Params
 # Accel limits
 ACCEL_HYST_GAP = 0.02 # don't change accel command for small oscilalitons within this value
 ACCEL_MAX = 800.
-ACCEL_MIN = -1499.
+ACCEL_MIN = -1200.
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 
 def accel_hysteresis(accel, accel_steady, enabled):
