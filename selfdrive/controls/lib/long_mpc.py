@@ -120,7 +120,7 @@ class LongitudinalMpc(object):
     x_vel = [0.0, 5.222, 11.164, 14.937, 20.973, 33.975, 42.469]
     y_mod = [1.542, 1.553, 1.599, 1.68, 1.75, 1.855, 1.9]
 
-    if self.v_ego > 6.7056:  # 8 mph
+    if self.v_ego > 3.57632:  # 8 mph
       TR = interp(self.v_ego, x_vel, y_mod)
     else:  # this allows us to get slightly closer to the lead car when stopping, while being able to have smooth stop and go
       x = [4.4704, 6.7056]  # smoothly ramp TR between 10 and 15 mph from 1.8s to defined TR above at 15mph
@@ -141,11 +141,11 @@ class LongitudinalMpc(object):
     if TR < 0.9:
       return 0.9
     else:
-      return round(TR, 3)
+      return round(TR, 4)
 
   def get_cost(self, TR):
-    x = [.9, 1.8, 2.7]
-    y = [1.0, .1, .05]
+    x = [.9, 1.8, 2.7, 3.6]
+    y = [1.0, .1, .05, 0.025]
     if self.x_lead is not None and self.v_ego is not None and self.v_ego != 0:
       real_TR = self.x_lead / float(self.v_ego)  # switched to cost generation using actual distance from lead car; should be safer
       if abs(real_TR - TR) >= .25:  # use real TR if diff is greater than x safety threshold
@@ -154,7 +154,7 @@ class LongitudinalMpc(object):
       factor = min(1,max(2,(self.v_lead - self.v_ego)/2 + 1.5))
       return min(round(float(interp(TR, x, y)), 3)/factor, 0.1)
     else:
-      return round(float(interp(TR, x, y)), 3)
+      return round(float(interp(TR, x, y)), 4)
 
   def get_TR(self):
     read_distance_lines = self.car_state.readdistancelines
@@ -234,8 +234,8 @@ class LongitudinalMpc(object):
           except Exception,e:
             pass
 
-      self.v_lead = v_lead-2
-      self.x_lead = x_lead-1
+      self.v_lead = v_lead
+      self.x_lead = x_lead
       self.a_lead_tau = lead.aLeadTau
       self.new_lead = False
       if not self.prev_lead_status or abs(x_lead - self.prev_lead_x) > 2.5:

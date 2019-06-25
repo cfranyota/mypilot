@@ -24,17 +24,17 @@ AWARENESS_DECEL = -0.2     # car smoothly decel at .2m/s^2 when user is distract
 
 # lookup tables VS speed to determine min and max accels in cruise
 # make sure these accelerations are smaller than mpc limits
-_A_CRUISE_MIN_V  = [-0.8, -0.7, -0.6, -0.5, -0.3]
+_A_CRUISE_MIN_V  = [-0.6, -0.5, -0.4, -0.3, -0.2]
 _A_CRUISE_MIN_BP = [0.0, 5.0, 10.0, 20.0, 55.0]
 
 # need fast accel at very low speed for stop and go
 # make sure these accelerations are smaller than mpc limits
-_A_CRUISE_MAX_V = [3.5, 3.0, 1.5, .5, .3]
+_A_CRUISE_MAX_V = [2.5, 2.0, 1.5, .5, .3]
 _A_CRUISE_MAX_V_FOLLOWING = [1.3, 1.6, 1.2, .7, .3]
 _A_CRUISE_MAX_BP = [0., 5., 10., 20., 55.]
 
 # Lookup table for turns
-_brake_factor = 1.2
+_brake_factor = 1.8
 _A_TOTAL_MAX_V = [2.3 * _brake_factor, 3.0 * _brake_factor, 3.9 * _brake_factor]
 _A_TOTAL_MAX_BP = [0., 25., 55.]
 
@@ -49,7 +49,7 @@ def calc_cruise_accel_limits(v_ego, following):
   return np.vstack([a_cruise_min, a_cruise_max])
 
 
-def limit_accel_in_turns(v_ego, angle_steers, a_target, CP):
+def limit_accel_in_turns(v_ego, angle_steers, a_target, CP, angle_later):
   """
   This function returns a limited long acceleration allowed, depending on the existing lateral acceleration
   this should avoid accelerating when losing the target in turns
@@ -57,9 +57,12 @@ def limit_accel_in_turns(v_ego, angle_steers, a_target, CP):
 
   a_total_max = interp(v_ego, _A_TOTAL_MAX_BP, _A_TOTAL_MAX_V)
   a_y = v_ego**2 * angle_steers * CV.DEG_TO_RAD / (CP.steerRatio * CP.wheelbase)
+  a_y2 = v_ego**2 * abs(angle_later) * CV.DEG_TO_RAD / (CP.steerRatio * CP.wheelbase)
   a_x_allowed = math.sqrt(max(a_total_max**2 - a_y**2, 0.))
+  a_x_allowed2 = a_total_max - a_y2
 
-  a_target[1] = min(a_target[1], a_x_allowed)
+  a_target[1] = min(a_target[1], a_x_allowed, a_x_allowed2)
+  a_target[0] = min(a_target[0], a_target[1])
   return a_target
 
 
@@ -69,6 +72,7 @@ class Planner(object):
     self.CP = CP
     self.poller = zmq.Poller()
 
+    self.lat_Control = messaging.sub_sock(context, service_list['latControl'].port, conflate=True, poller=self.poller)
     self.plan = messaging.pub_sock(context, service_list['plan'].port)
     self.live_longitudinal_mpc = messaging.pub_sock(context, service_list['liveLongitudinalMpc'].port)
 
@@ -87,6 +91,8 @@ class Planner(object):
     self.longitudinalPlanSource = 'cruise'
     self.fcw_checker = FCWChecker()
     self.fcw_enabled = fcw_enabled
+
+    self.lastlat_Control = None
 
     self.params = Params()
 
@@ -128,11 +134,16 @@ class Planner(object):
     lead_1 = live20.live20.leadOne
     lead_2 = live20.live20.leadTwo
 
+    for socket, event in self.poller.poll(0):
+      if socket is self.lat_Control:
+        self.lastlat_Control = messaging.recv_one(socket).latControl
+
     enabled = (long_control_state == LongCtrlState.pid) or (long_control_state == LongCtrlState.stopping)
     following = lead_1.status and lead_1.dRel < 45.0 and lead_1.vLeadK > v_ego and lead_1.aLeadK > 0.0
 
     v_speedlimit = NO_CURVATURE_SPEED
     v_curvature = NO_CURVATURE_SPEED
+    v_speedlimit_ahead = NO_CURVATURE_SPEED
 
     map_age = cur_time - rcv_times['liveMapData']
     map_valid = live_map_data.liveMapData.mapValid and map_age < 10.0
@@ -145,6 +156,12 @@ class Planner(object):
         offset = float(self.params.get("SpeedLimitOffset"))
         v_speedlimit = speed_limit + offset
 
+      if live_map_data.liveMapData.speedLimitAheadValid and live_map_data.liveMapData.speedLimitAheadDistance < 200:
+        speed_limit_ahead = live_map_data.liveMapData.speedLimitAhead
+        #print "Speed Ahead found"
+        #print speed_limit_ahead
+        v_speedlimit_ahead = speed_limit_ahead + offset
+
       if live_map_data.liveMapData.curvatureValid:
         curvature = abs(live_map_data.liveMapData.curvature)
         a_y_max = 2.975 - v_ego * 0.0375  # ~1.85 @ 75mph, ~2.6 @ 25mph
@@ -152,18 +169,43 @@ class Planner(object):
         v_curvature = min(NO_CURVATURE_SPEED, v_curvature)
 
     decel_for_turn = bool(v_curvature < min([v_cruise_setpoint, v_speedlimit, v_ego + 1.]))
-    v_cruise_setpoint = min([v_cruise_setpoint, v_curvature, v_speedlimit])
+    v_cruise_setpoint = min([v_cruise_setpoint, v_curvature, v_speedlimit, v_speedlimit_ahead])
 
     # Calculate speed for normal cruise control
     if enabled:
       accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego, following)]
-      jerk_limits = [min(-0.1, accel_limits[0]), max(0.1, accel_limits[1])]  # TODO: make a separate lookup for jerk tuning
-      accel_limits = limit_accel_in_turns(v_ego, CS.carState.steeringAngle, accel_limits, self.CP)
+      accellimitmaxdynamic = -0.0018*v_ego+0.2
+      jerk_limits = [min(-0.2, accel_limits[0]), max(accellimitmaxdynamic, accel_limits[1])]  # TODO: make a separate lookup for jerk tuning
+      if not CS.carState.leftBlinker and not CS.carState.rightBlinker:
+        steering_angle = CS.carState.steeringAngle
+        if self.lastlat_Control and v_ego > 11:
+          angle_later = self.lastlat_Control.anglelater
+        else:
+          angle_later = 0
+      else:
+        angle_later = 0
+        steering_angle = 0
+      accel_limits = limit_accel_in_turns(v_ego, CS.carState.steeringAngle, accel_limits, self.CP, angle_later * self.CP.steerRatio)
 
       if force_slow_decel:
         # if required so, force a smooth deceleration
         accel_limits[1] = min(accel_limits[1], AWARENESS_DECEL)
         accel_limits[0] = min(accel_limits[0], accel_limits[1])
+
+      if v_speedlimit_ahead < v_speedlimit:
+        time_to_speedlimit = max(1.0, live_map_data.liveMapData.speedLimitAheadDistance / max(self.v_cruise, 1.))
+        #print "Decelerating in "
+        #print time_to_speedlimit
+        required_decel = min(0, (v_speedlimit_ahead - self.v_cruise) / time_to_speedlimit)*5
+        if live_map_data.liveMapData.speedLimitAheadDistance < 100.0:
+          max(required_decel*10.0, -3.0)
+        #print "required_decel"
+        #print required_decel
+        #print "accel_limits 0"
+        #print accel_limits[0]
+        #print "accel_limits 1"
+        #print accel_limits[1]
+        accel_limits[0] = min(accel_limits[0], required_decel)
 
       # Change accel limits based on time remaining to turn
       if decel_for_turn:
@@ -235,7 +277,7 @@ class Planner(object):
     plan_send.plan.longitudinalPlanSource = self.longitudinalPlanSource
 
     plan_send.plan.vCurvature = v_curvature
-    plan_send.plan.decelForTurn = decel_for_turn
+    plan_send.plan.decelForTurn = bool(decel_for_turn or v_speedlimit_ahead < min([v_speedlimit, v_ego + 1.]))
     plan_send.plan.mapValid = map_valid
 
     radar_valid = not (radar_dead or radar_fault)
