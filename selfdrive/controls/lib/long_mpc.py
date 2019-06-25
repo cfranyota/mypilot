@@ -24,11 +24,17 @@ class LongitudinalMpc(object):
     self.prev_lead_status = False
     self.prev_lead_x = 0.0
     self.new_lead = False
+    self.v_ego = 0.0
+    self.car_state = None
+
     self.df_data = []
     self.df_frame = 0
 
     self.mpc_frames = 0
     self.last_cloudlog_t = 0.0
+    self.last_time = None
+    self.v_lead = None
+    self.x_lead = None
 
     self.last_cost = 0
     self.car_data = {"lead_vels": [], "traffic_vels": []}
@@ -227,7 +233,7 @@ class LongitudinalMpc(object):
               f.write("\n".join([str(i) for i in self.df_data]) + "\n")
             self.df_data = []
             self.mpc_frame = 0
-          except:
+          except Exception,e:
             pass
 
       self.v_lead = v_lead
