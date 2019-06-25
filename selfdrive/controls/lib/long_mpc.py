@@ -72,12 +72,9 @@ class LongitudinalMpc(object):
     for idx, vel in enumerate(lead_vels):
       if idx != 0:
         lead_vel_diffs.append(abs(vel - lead_vels[idx - 1]))
-    x = [0.0, 0.21, 0.466, 0.722, 0.856, 0.96, 1.0]  # 1 is estimated to be heavy traffic
+    x = [0, len(lead_vels)]
     y = [1.2, 1.19, 1.17, 1.13, 1.09, 1.04, 1.0]
-    traffic_mod = interp(sum(lead_vel_diffs)/len(lead_vel_diffs), x, y)
-    x = [20.1168, 24.5872]  # min speed is 45mph for traffic level mod
-    y = [0.2, 0.0]
-    traffic = max(traffic_mod - interp(self.v_ego, x, y), 1.0)
+    traffic = interp(sum(lead_vel_diffs), x, y)
     return traffic
 
   def get_acceleration(self, velocity_list, is_self):  # calculate acceleration to generate more accurate following distances
