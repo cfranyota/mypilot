@@ -590,6 +590,7 @@ def controlsd_thread(gctx=None, rate=100):
                     v_cruise_kph_last, AM, rk, driver_status,
                     LaC, LoC, VM, angle_model_bias, passive, is_metric, cal_perc, libmpc, live20, dynamic_follow_sock)
 
+    rk.keep_time() # Run at 100Hz
     prof.checkpoint("State Control")
 
     # Publish data
