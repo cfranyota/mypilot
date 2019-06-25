@@ -2,6 +2,7 @@ from selfdrive.controls.lib.pid import PIController
 from selfdrive.controls.lib.drive_helpers import get_steer_max
 from cereal import car
 from cereal import log
+from common.numpy_fast import interp
 from common.realtime import sec_since_boot
 
 class LatControlPID(object):
