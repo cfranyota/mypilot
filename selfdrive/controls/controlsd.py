@@ -278,10 +278,10 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
   v_acc_sol = plan.vStart + dt * (a_acc_sol + plan.aStart) / 2.0
 
   v_ego_scale = [-0.2154252678155899, 41.05433654785156]
-  a_ego_scale = [-4.493537902832031, 3.710982322692871]
-  v_lead_scale = [0.0, 48.58272933959961]
-  x_lead_scale = [0.125, 144.125]
-  a_lead_scale = [-8.398388862609863, 9.994253158569336]
+  a_ego_scale = [-6.315138339996338, 4.432629585266113]
+  v_lead_scale = [0.0, 48.66924285888672]
+  x_lead_scale = [0.125, 185.21875]
+  a_lead_scale = [-8.398388862609863, 14.781030654907227]
 
   v_lead = 20.0
   x_lead = 20.0
@@ -298,7 +298,7 @@ def state_control(rcv_times, plan, path_plan, CS, CP, state, events, v_cruise_kp
   if has_lead:
     model_output = float(libmpc.run_model(norm(CS.vEgo, v_ego_scale), norm(CS.aEgo, a_ego_scale), norm(v_lead, v_lead_scale), norm(x_lead, x_lead_scale), norm(a_lead, a_lead_scale)))
 
-    model_output = clip((model_output - 0.51) * 4.0, -1.0, 1.0)
+    model_output = clip((model_output - 0.5) * 2.5, -1.0, 1.0)
 
     actuators.gas = max(model_output, 0.0)
     actuators.brake = -min(model_output, 0.0)
