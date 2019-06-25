@@ -154,6 +154,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, o
     'SET_ME_X48': 0x48,
     'STEERING_REQUIRED': hud.steer_required,
     'SOLID_LANES': hud.lanes,
+    'DASHED_LANES': hud.dashed_lanes,
     'BEEP': hud.beep,
   }
   # Bosch sends commands to bus 2.
