@@ -72,8 +72,10 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     calibrationProgress @47;
     lowBattery @48;
     invalidGiraffeHonda @49;
-    vehicleModelInvalid @50;
-    controlsFailed @51;
+    manualSteeringRequired @50;
+    manualSteeringRequiredBlinkersOn @51;
+    vehicleModelInvalid @52;
+    controlsFailed @53;
   }
 }
 
