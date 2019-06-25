@@ -222,19 +222,6 @@ class CarInterface(object):
       ret.longitudinalTuning.kiBP = [0., 5., 35.]
       ret.longitudinalTuning.kiV = [0.56, 0.54, 0.32]
 
-    elif candidate == CAR.INSIGHT:
-      stop_and_go = True
-      ret.mass = 2987. * CV.LB_TO_KG + std_cargo
-      ret.wheelbase = 2.7
-      ret.centerToFront = ret.wheelbase * 0.39
-      ret.steerRatio = 15  # 12.58 is spec end-to-end
-      tire_stiffness_factor = 0.82
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.2]]
-      ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
-      ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.18, 0.12]
-
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
       if not candidate == CAR.ACCORDH: # Hybrid uses same brake msg as hatch
