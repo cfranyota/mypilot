@@ -32,7 +32,7 @@ class LongitudinalMpc(object):
     self.last_cloudlog_t = 0.0
 
     self.last_cost = 0
-    self.dynamic_follow_dict = {"lead_vels": [], "traffic_vels": []}
+    self.car_data = {"lead_vels": [], "traffic_vels": []}
     self.mpc_frame = 0  # idea thanks to kegman
     self.relative_velocity = None
     self.relative_distance = None
