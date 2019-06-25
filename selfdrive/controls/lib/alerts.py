@@ -95,6 +95,27 @@ ALERTS = [
       Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimeWarning1, .4, 2., 3.),
 
   Alert(
+      "manualSteeringRequired",
+      "MANUAL STEERING REQUIRED",
+      "Steering is Off - Press LKAS button to turn On",
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .2, .2, .2),
+
+  Alert(
+      "manualSteeringRequiredBlinkerOnLeft",
+      "MANUAL STEERING REQUIRED",
+      "Left Turn Signal is On",
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .2, .2, .2),
+
+  Alert(
+      "manualSteeringRequiredBlinkerOnRight",
+      "MANUAL STEERING REQUIRED",
+      "Right Turn Signal is On",
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .2, .2, .2),
+
+  Alert(
       "steerTempUnavailableMute",
       "TAKE CONTROL",
       "Steering Temporarily Unavailable",
