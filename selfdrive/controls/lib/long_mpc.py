@@ -189,7 +189,7 @@ class LongitudinalMpc(object):
     self.cur_state[0].x_ego = 0.0
 
     if lead is not None and lead.status:
-      self.mpc_frames += 1
+      self.mpc_frame += 1
       x_lead = lead.dRel
       v_lead = max(0.0, lead.vLead)
       a_lead = lead.aLeadK
@@ -200,12 +200,12 @@ class LongitudinalMpc(object):
 
       if self.mpc_id == 1 and not CS.carState.cruiseState.enabled:
         self.df_data.append([v_ego, a_ego, v_lead, x_lead, a_lead, gas, brake, time.time()])
-        if self.mpc_frames >= 400:  # every 10 seconds, write to file
+        if self.mpc_frame >= 200:  # every 5 seconds, write to file
           try:
             with open("/data/openpilot/selfdrive/df/df-data", "a") as f:
               f.write("\n".join([str(i) for i in self.df_data]) + "\n")
             self.df_data = []
-            self.mpc_frames = 0
+            self.mpc_frame = 0
           except:
             pass
 
