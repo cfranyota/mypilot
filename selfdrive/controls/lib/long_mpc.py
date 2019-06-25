@@ -28,9 +28,7 @@ class LongitudinalMpc(object):
     self.car_state = None
 
     self.df_data = []
-    self.df_frame = 0
 
-    self.mpc_frames = 0
     self.last_cloudlog_t = 0.0
     self.last_time = None
     self.v_lead = None
