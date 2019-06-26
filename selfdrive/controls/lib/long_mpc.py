@@ -260,7 +260,7 @@ class LongitudinalMpc(object):
         TR = ONE_BAR_DISTANCE
       if self.car_state.readdistancelines != self.lastTR:
         self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
-        self.lastTR = self.car_state.readdistanceline
+        self.lastTR = self.car_state.readdistancelines
     elif self.car_state.readdistancelines == 2:
       if self.street_speed:
         TR = interp(-self.v_rel, TWO_BAR_PROFILE_BP, TWO_BAR_PROFILE)
