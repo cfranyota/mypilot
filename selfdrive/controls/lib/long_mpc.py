@@ -167,9 +167,9 @@ class LongitudinalMpc(object):
         TR = real_TR
     if self.v_lead is not None and self.v_ego > 5:
       factor = min(1,max(2,(self.v_lead - self.v_ego)/2 + .5))
-      return min(round(float(interp(TR, x, y)), 4)/factor, 0.1)
+      return min(round(float(interp(TR, x, y)), 3)/factor, 0.1)
     else:
-      return round(float(interp(TR, x, y)), 4)
+      return round(float(interp(TR, x, y)), 3)
 
   def calc_rate(self, seconds=1.0, new_frame=False):  # return current rate of long_mpc in fps/hertz
     current_time = time.time()

@@ -327,22 +327,22 @@ class CarState(object):
       if self.user_brake > 0.05:
         self.brake_pressed = 1
 
+    self.cruise_setting = cp.vl["SCM_BUTTONS"]['CRUISE_SETTING']
+    self.prev_cruise_setting = self.cruise_setting
     # when user presses distance button on steering wheel
     if self.cruise_setting == 3:
-      if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 0:
-        self.trMode = (self.trMode + 1 ) % 4
+      if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 3:
+        self.trMode = (self.trMode + 1) % 4
 
     # when user presses LKAS button on steering wheel
     if self.cruise_setting == 1:
-      if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 0:
+      if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 1:
         if self.lkMode:
           self.lkMode = False
         else:
           self.lkMode = True
 
-    self.prev_cruise_setting = self.cruise_setting
-    self.cruise_setting = cp.vl["SCM_BUTTONS"]['CRUISE_SETTING']
-    self.read_distance_lines = self.trMode + 1
+    self.read_distance_lines = self.trMode
 
     if self.read_distance_lines <> self.read_distance_lines_prev:
       self.read_distance_lines_prev = self.read_distance_lines
