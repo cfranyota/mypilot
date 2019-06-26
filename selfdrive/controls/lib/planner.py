@@ -18,13 +18,13 @@ from selfdrive.controls.lib.long_mpc import LongitudinalMpc
 
 NO_CURVATURE_SPEED = 200. * CV.MPH_TO_MS
 
-_DT_MPC = 0.2  # 5Hz
+_DT_MPC = 0.4  # 10Hz
 MAX_SPEED_ERROR = 2.0
 AWARENESS_DECEL = -0.2     # car smoothly decel at .2m/s^2 when user is distracted
 
 # lookup tables VS speed to determine min and max accels in cruise
 # make sure these accelerations are smaller than mpc limits
-_A_CRUISE_MIN_V  = [-0.7, -0.6, -0.5, -0.4, -0.3]
+_A_CRUISE_MIN_V  = [-0.65, -0.55, -0.45, -0.35, -0.25]
 _A_CRUISE_MIN_BP = [0.0, 5.0, 10.0, 20.0, 55.0]
 
 # need fast accel at very low speed for stop and go
@@ -34,7 +34,7 @@ _A_CRUISE_MAX_V_FOLLOWING = [1.3, 1.6, 1.2, .7, .3]
 _A_CRUISE_MAX_BP = [0., 5., 10., 20., 55.]
 
 # Lookup table for turns
-_brake_factor = 1.9
+_brake_factor = 1.2
 _A_TOTAL_MAX_V = [2.3 * _brake_factor, 3.0 * _brake_factor, 3.9 * _brake_factor]
 _A_TOTAL_MAX_BP = [0., 25., 55.]
 

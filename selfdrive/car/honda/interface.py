@@ -381,8 +381,9 @@ class CarInterface(object):
 
     ret.gasMaxBP = [0.0, 1.4082, 2.80311, 4.22661, 5.38271, 6.16561, 7.24781, 8.28308, 10.24465, 12.96402, 15.42303, 18.11903, 20.11703, 24.46614, 29.05805, 32.71015, 35.76326]  # m/s
     ret.gasMaxV = [0.39, 0.43, 0.425, 0.42, 0.415, 0.4, 0.4832, 0.375, 0.38, 0.383, 0.385, 0.388, 0.39, 0.4, 0.41, 0.42, 0.43] # percentage of gas
-    ret.brakeMaxBP = [0., 5., 10., 20.]  # m/s
-    ret.brakeMaxV = [1.5, 1.25, 1., 0.8]   # max brake allowed
+
+    ret.brakeMaxBP = [0., 20.]  # m/s
+    ret.brakeMaxV = [1.0, 0.8]   # max brake allowed
 
     ret.longitudinalTuning.deadzoneBP = [0.]
     ret.longitudinalTuning.deadzoneV = [0.]
