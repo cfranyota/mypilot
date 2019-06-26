@@ -9,11 +9,11 @@ LongCtrlState = log.Live100Data.LongControlState
 
 STOPPING_EGO_SPEED = 0.67056
 MIN_CAN_SPEED = 0.3  # TODO: parametrize this in car interface
-STOPPING_TARGET_SPEED = MIN_CAN_SPEED + 0.01
+STOPPING_TARGET_SPEED = MIN_CAN_SPEED + 0.1
 STARTING_TARGET_SPEED = 0.5
 BRAKE_THRESHOLD_TO_PID = 0.2
 
-STOPPING_BRAKE_RATE = 0.2  # brake_travel/s while trying to stop
+STOPPING_BRAKE_RATE = 0.3  # brake_travel/s while trying to stop
 STARTING_BRAKE_RATE = 0.8  # brake_travel/s while releasing on restart
 # TODO: bosch sends max value to hold at standstill
 BRAKE_STOPPING_TARGET = 1.8 # 0.5  # apply at least this amount of brake to maintain the vehicle stationary
@@ -81,7 +81,7 @@ class LongControl(object):
 
   def dynamic_gas(self, v_ego, v_rel):
     x = [0.0, 1.4082, 2.80311, 4.22661, 5.38271, 6.16561, 7.24781, 8.28308, 10.24465, 12.96402, 15.42303, 18.11903, 20.11703, 24.46614, 29.05805, 32.71015, 35.76326]
-    y = [0.2, 0.20443, 0.21592, 0.23334, 0.25734, 0.27916, 0.3229, 0.34784, 0.36765, 0.38, 0.396, 0.409, 0.425, 0.478, 0.55, 0.621, 0.7]
+    y = [0.1, 0.20443, 0.21592, 0.23334, 0.25734, 0.27916, 0.3229, 0.34784, 0.36765, 0.38, 0.396, 0.409, 0.425, 0.478, 0.55, 0.621, 0.7]
     accel = interp(v_ego, x, y)
 
     if v_rel is not None:  # dynamic gas profile specific operations, and if lead

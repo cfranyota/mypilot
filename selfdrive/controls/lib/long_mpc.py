@@ -66,16 +66,6 @@ class LongitudinalMpc(object):
     else:  # if no car, reset lead car list; ignore for traffic
       self.car_data["lead_vels"] = []
 
-  def calculate_tr(self, v_ego):
-    self.save_car_data(v_ego)
-    generatedTR = self.dynamic_follow(v_ego)
-    generated_cost = self.generate_cost(generatedTR, v_ego)
-
-    if abs(generated_cost - self.last_cost) > .15:
-      self.libmpc.init(MPC_COST_LONG.TTC, generated_cost, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
-      self.last_cost = generated_cost
-    return generatedTR
-
   def get_traffic_level(self):  # based on fluctuation of v_lead
     lead_vels = self.car_data["traffic_vels"]
     if len(lead_vels) < 20:  # seconds
@@ -118,9 +108,9 @@ class LongitudinalMpc(object):
 
   def smooth_follow(self):  # in m/s
     x_vel = [0.0, 5.222, 11.164, 14.937, 20.973, 33.975, 42.469]
-    y_mod = [1.542, 1.553, 1.599, 1.68, 1.75, 1.855, 1.9]
+    y_mod = [0.542, 0.553, 0.599, 0.68, 0.75, 0.855, 0.9]
 
-    if self.v_ego > 3.57632:  # 8 mph
+    if self.v_ego > 4.4704:  # 10 mph
       TR = interp(self.v_ego, x_vel, y_mod)
     else:  # this allows us to get slightly closer to the lead car when stopping, while being able to have smooth stop and go
       x = [4.4704, 6.7056]  # smoothly ramp TR between 10 and 15 mph from 1.8s to defined TR above at 15mph
@@ -128,9 +118,10 @@ class LongitudinalMpc(object):
       TR = interp(self.v_ego, x, y)
 
     if self.v_lead is not None:  # since the new mpc now handles braking nicely, simplify mods
-      x = [0, 0.61, 1.26, 2.1, 2.68]  # relative velocity values
-      y = [0, -0.017, -0.053, -0.154, -0.272]  # modification values
-      TR_mod = interp(self.v_lead + self.v_ego, x, y)  # quicker acceleration/don't brake when lead is overtaking
+      x = [0, 0.3, 0.61, 1.26, 2.1, 2.68, 2.9]  # relative velocity values
+      y = [0, -0.153, -0.117, -0.153, -0.154, -0.172, -0.192]  # modification values
+      v_lead = self.v_lead + 1
+      TR_mod = interp(v_lead + self.v_ego, x, y)  # quicker acceleration/don't brake when lead is overtaking
 
       '''x = [-1.49, -1.1, -0.67, 0.0, 0.67, 1.1, 1.49]
       y = [0.056, 0.032, 0.016, 0.0, -0.016, -0.032, -0.056]
@@ -141,7 +132,7 @@ class LongitudinalMpc(object):
     if TR < 0.9:
       return 0.9
     else:
-      return round(TR, 4)
+      return round(TR, 3)
 
   def get_cost(self, TR):
     x = [.9, 1.8, 2.7, 3.6]
@@ -154,7 +145,7 @@ class LongitudinalMpc(object):
       factor = min(1,max(2,(self.v_lead - self.v_ego)/2 + 1.5))
       return min(round(float(interp(TR, x, y)), 3)/factor, 0.1)
     else:
-      return round(float(interp(TR, x, y)), 4)
+      return round(float(interp(TR, x, y)), 3)
 
   def get_TR(self):
     read_distance_lines = self.car_state.readdistancelines
@@ -214,7 +205,7 @@ class LongitudinalMpc(object):
 
     if lead is not None and lead.status:
       self.mpc_frame += 1
-      x_lead = lead.dRel
+      x_lead = lead.dRel+1
       v_lead = max(0.0, lead.vLead)
       a_lead = lead.aLeadK
       a_rel = lead.aRel
@@ -238,7 +229,7 @@ class LongitudinalMpc(object):
       self.x_lead = x_lead
       self.a_lead_tau = lead.aLeadTau
       self.new_lead = False
-      if not self.prev_lead_status or abs(x_lead - self.prev_lead_x) > 2.5:
+      if not self.prev_lead_status or abs(x_lead - self.prev_lead_x) > 1.5:
         self.libmpc.init_with_simulation(self.v_mpc, x_lead, v_lead, a_lead, self.a_lead_tau)
         self.new_lead = True
 
@@ -249,7 +240,7 @@ class LongitudinalMpc(object):
     else:
       self.prev_lead_status = False
       # Fake a fast lead car, so mpc keeps running
-      self.cur_state[0].x_l = 40.0
+      self.cur_state[0].x_l = 50.0
       self.cur_state[0].v_l = v_ego + 8.0
       a_lead = 0.0
       self.a_lead_tau = _LEAD_ACCEL_TAU

@@ -229,11 +229,11 @@ class CarInterface(object):
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 15  # 12.58 is spec end-to-end
       tire_stiffness_factor = 0.82
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.2]]
-      ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
-      ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.18, 0.12]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.5], [0.22]]
+      ret.longitudinalTuning.kpBP = [0., 5., 20., 35.]
+      ret.longitudinalTuning.kpV = [0.6, 0.64, 0.6, 0.5]
+      ret.longitudinalTuning.kiBP = [0., 5., 20., 35.]
+      ret.longitudinalTuning.kiV = [0.18, 0.192, 0.18, 0.22]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
@@ -380,9 +380,9 @@ class CarInterface(object):
     ret.steerMaxV = [1.]   # max steer allowed
 
     ret.gasMaxBP = [0.0, 1.4082, 2.80311, 4.22661, 5.38271, 6.16561, 7.24781, 8.28308, 10.24465, 12.96402, 15.42303, 18.11903, 20.11703, 24.46614, 29.05805, 32.71015, 35.76326]  # m/s
-    ret.gasMaxV = [0.29, 0.33, 0.325, 0.32, 0.315, 0.3, 0.2832, 0.275, 0.28, 0.283, 0.285, 0.288, 0.29, 0.3, 0.31, 0.32, 0.33] # percentage of gas
-    ret.brakeMaxBP = [0., 20.]  # m/s
-    ret.brakeMaxV = [1., 0.8]   # max brake allowed
+    ret.gasMaxV = [0.39, 0.43, 0.425, 0.42, 0.415, 0.4, 0.4832, 0.375, 0.38, 0.383, 0.385, 0.388, 0.39, 0.4, 0.41, 0.42, 0.43] # percentage of gas
+    ret.brakeMaxBP = [0., 5., 10., 20.]  # m/s
+    ret.brakeMaxV = [1.5, 1.25, 1., 0.8]   # max brake allowed
 
     ret.longitudinalTuning.deadzoneBP = [0.]
     ret.longitudinalTuning.deadzoneV = [0.]

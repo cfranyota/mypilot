@@ -90,7 +90,7 @@ def radard_thread(gctx=None):
   path_x = np.arange(0.0, 140.0, 0.1)    # 140 meters is max
 
   # Time-alignment
-  rate = 20.   # model and radar are both at 20Hz
+  rate = 10.   # model and radar are both at 10Hz
   tsv = 1./rate
   v_len = 20         # how many speed data points to remember for t alignment with rdr data
 

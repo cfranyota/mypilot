@@ -128,7 +128,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, o
       'ENABLE_MINI_CAR': hud.mini_car,
       'SET_TO_1': 0x01,
       'HUD_LEAD': hud.car,
-      'HUD_DISTANCE': 0x02,
+      'HUD_DISTANCE': hud.dist_lines,
       'ACC_ON': hud.car != 0,
       'SET_TO_X3': 0x03,
     }
@@ -138,9 +138,9 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, o
       'PCM_GAS': hud.pcm_accel,
       'CRUISE_SPEED': hud.v_cruise,
       'ENABLE_MINI_CAR': hud.mini_car,
-      'HUD_LEAD': hud.car,
       'SET_ME_X03': hud.dist_lines,
       'SET_ME_X03_2': hud.speed_units,
+      'HUD_LEAD': hud.car,
       'SET_ME_X01': 0x01,
       'HUD_DISTANCE_3': 1,
     }
