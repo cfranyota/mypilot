@@ -329,7 +329,7 @@ class CarState(object):
     # when user presses distance button on steering wheel
     if self.cruise_setting == 3:
       if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 0:
-        self.trMode = (self.trMode + 1) % 3
+        self.trMode = (self.trMode + 1) % 4
 
     # when user presses LKAS button on steering wheel
     if self.cruise_setting == 1:
