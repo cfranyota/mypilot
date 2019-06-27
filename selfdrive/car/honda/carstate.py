@@ -150,7 +150,7 @@ class CarState(object):
   def __init__(self, CP):
     self.trMode = 0
     self.lkMode = True
-    self.read_distance_lines_prev = 0
+    self.read_distance_lines_prev = 3
     self.CP = CP
     self.can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
     self.shifter_values = self.can_define.dv["GEARBOX"]["GEAR_SHIFTER"]
