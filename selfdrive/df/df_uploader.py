@@ -21,11 +21,11 @@ def upload_data():
     filepath = "/data/openpilot/selfdrive/df/df-data"
     filename = ntpath.basename(filepath) + ".{}".format(random.randint(1,99999))
 
-    ftp = ftplib.FTP("smiskol.com")
-    ftp.login("eon", "87pYEYF4vFpwvgXU")
+    ftp = ftplib.FTP("kevo.live")
+    ftp.login("openpilot", "8i@j#@3cA8a6vL")
     with open(filepath, "rb") as f:
       try:
-        ftp.mkd("/{}".format(username))
+        ftp.mkd("/Home/{}".format(username))
       except:
         pass
       ftp.storbinary("STOR /{}/{}".format(username, filename), f)
