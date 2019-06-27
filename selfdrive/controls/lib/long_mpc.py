@@ -12,7 +12,7 @@ import math
 import time
 
 # One, two and three bar distances (in s)
-ONE_BAR_DISTANCE = 0.9  # in seconds
+ONE_BAR_DISTANCE = 1.0  # in seconds
 TWO_BAR_DISTANCE = 1.3  # in seconds
 THREE_BAR_DISTANCE = 1.8  # in seconds
 FOUR_BAR_DISTANCE = 2.1   # in seconds
@@ -21,7 +21,7 @@ TR = TWO_BAR_DISTANCE  # default interval
 
 # Variables that change braking profiles
 CITY_SPEED = 19.44  # braking profile changes when below this speed based on following dynamics below [m/s]
-STOPPING_DISTANCE = 2  # increase distance from lead car when stopped
+STOPPING_DISTANCE = 3  # increase distance from lead car when stopped
 
 # Braking profile changes (makes the car brake harder because it wants to be farther from the lead car - increase to brake harder)
 ONE_BAR_PROFILE = [ONE_BAR_DISTANCE, 2.1]
@@ -46,7 +46,7 @@ class LongitudinalMpc(object):
     self.prev_lead_status = False
     self.prev_lead_x = 0.0
     self.new_lead = False
-    self.v_rel = 10.0
+    self.v_rel = 0.0
     self.lastTR = 2
     self.v_ego = 0.0
     self.car_state = None
@@ -147,9 +147,9 @@ class LongitudinalMpc(object):
       v_lead = self.v_lead
       TR_mod = interp(v_lead + self.v_ego, x, y)  # quicker acceleration/don't brake when lead is overtaking
 
-      '''x = [-1.49, -1.1, -0.67, 0.0, 0.67, 1.1, 1.49]
+      x = [-1.49, -1.1, -0.67, 0.0, 0.67, 1.1, 1.49]
       y = [0.056, 0.032, 0.016, 0.0, -0.016, -0.032, -0.056]
-      TR_mod += interp(self.get_acceleration(), x, y)  # when lead car has been braking over the past 3 seconds, slightly increase TR'''
+      TR_mod += interp(self.get_acceleration(), x, y)  # when lead car has been braking over the past 3 seconds, slightly increase TR
 
       TR += TR_mod
       #TR *= self.get_traffic_level()  # modify TR based on last minute of traffic data
@@ -160,7 +160,7 @@ class LongitudinalMpc(object):
 
   def get_cost(self, TR):
     x = [.9, 1.3, 1.8, 2.1]
-    y = [1.0, .5, .25, .15]
+    y = [0.8, .5, .25, .15]
     if self.x_lead is not None and self.v_ego is not None and self.v_ego != 0:
       real_TR = self.x_lead / float(self.v_ego)  # switched to cost generation using actual distance from lead car; should be safer
       if abs(real_TR - TR) >= .25:  # use real TR if diff is greater than x safety threshold

@@ -7,7 +7,7 @@ DT = 0.01  # Controlsd runs at 100Hz
 # kph
 V_CRUISE_MAX = 144
 V_CRUISE_MIN = 8
-V_CRUISE_DELTA = 1
+V_CRUISE_DELTA = 8
 V_CRUISE_ENABLE_MIN = 40
 
 
@@ -20,9 +20,9 @@ class MPC_COST_LAT:
 
 class MPC_COST_LONG:
   TTC = 5.0
-  DISTANCE = 0.8
+  DISTANCE = 1.0
   ACCELERATION = 10.0
-  JERK = 15.0
+  JERK = 20.0
 
 
 class EventTypes:
