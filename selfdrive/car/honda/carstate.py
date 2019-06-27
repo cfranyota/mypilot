@@ -150,7 +150,7 @@ class CarState(object):
   def __init__(self, CP):
     self.trMode = 0
     self.lkMode = True
-    self.read_distance_lines_prev = 4
+    self.read_distance_lines_prev = 0
     self.CP = CP
     self.can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
     self.shifter_values = self.can_define.dv["GEARBOX"]["GEAR_SHIFTER"]
@@ -243,7 +243,7 @@ class CarState(object):
     speed = (1. - self.v_weight) * cp.vl["ENGINE_DATA"]['XMISSION_SPEED'] * CV.KPH_TO_MS * speed_factor + \
       self.v_weight * v_wheel
 
-    if abs(speed - self.v_ego) > 2.0:  # Prevent large accelerations when car starts at non zero speed
+    if abs(speed - self.v_ego) > 1.5:  # Prevent large accelerations when car starts at non zero speed
       self.v_ego_kf.x = [[speed], [0.0]]
 
     self.v_ego_raw = speed
@@ -261,7 +261,6 @@ class CarState(object):
     self.angle_steers = cp.vl["STEERING_SENSORS"]['STEER_ANGLE']
     self.angle_steers_rate = cp.vl["STEERING_SENSORS"]['STEER_ANGLE_RATE']
 
-    self.cruise_setting = cp.vl["SCM_BUTTONS"]['CRUISE_SETTING']
     self.cruise_buttons = cp.vl["SCM_BUTTONS"]['CRUISE_BUTTONS']
 
     self.blinker_on = cp.vl["SCM_FEEDBACK"]['LEFT_BLINKER'] or cp.vl["SCM_FEEDBACK"]['RIGHT_BLINKER']
@@ -329,18 +328,19 @@ class CarState(object):
 
     # when user presses distance button on steering wheel
     if self.cruise_setting == 3:
-      if self.cruise_buttons == 0:
-        self.trMode = (self.trMode + 1) % 4
+      if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 0:
+        self.trMode = (self.trMode + 1) % 3
 
     # when user presses LKAS button on steering wheel
     if self.cruise_setting == 1:
-      if self.cruise_buttons == 0:
+      if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 0:
         if self.lkMode:
           self.lkMode = False
         else:
           self.lkMode = True
 
     self.prev_cruise_setting = self.cruise_setting
+    self.cruise_setting = cp.vl["SCM_BUTTONS"]['CRUISE_SETTING']
     self.read_distance_lines = self.trMode + 1
 
     if self.read_distance_lines <> self.read_distance_lines_prev:

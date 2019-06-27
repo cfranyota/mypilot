@@ -122,23 +122,13 @@ def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, r
 def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, radar_off_can, openpilot_longitudinal_control, idx):
   commands = []
 
-  distance = hud.dist_lines
-  if hud.dist_lines == 1:
-    distance = 0x04
-  elif hud.dist_lines == 2:
-    distance = 0x03
-  elif hud.dist_lines == 3:
-    distance = 0x02
-  elif hud.dist_lines == 4:
-    distance = 0x01
-
   if car_fingerprint in HONDA_BOSCH:
     acc_hud_values = {
       'CRUISE_SPEED': hud.v_cruise,
       'ENABLE_MINI_CAR': hud.mini_car,
       'SET_TO_1': 0x01,
       'HUD_LEAD': hud.car,
-      'HUD_DISTANCE': distance,
+      'HUD_DISTANCE': hud.dist_lines,
       'ACC_ON': hud.car != 0,
       'SET_TO_X3': 0x03,
     }

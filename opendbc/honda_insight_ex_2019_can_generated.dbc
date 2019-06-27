@@ -197,7 +197,7 @@ BO_ 780 ACC_HUD: 8 ADAS
  SG_ ZEROS_BOH : 7|24@0+ (0.002759506,0) [0|100] "m/s" BDY
  SG_ FCM_OFF : 35|1@0+ (1,0) [0|1] "" BDY
  SG_ SET_TO_1 : 36|1@0+ (1,0) [0|1] "" XXX
- SG_ HUD_DISTANCE : 47|2@0+ (1,0) [0|3] "" BDY
+ SG_ HUD_DISTANCE : 47|1@0+ (1,0) [0|3] "" BDY
  SG_ HUD_LEAD : 45|2@0+ (1,0) [0|3] "" BDY
  SG_ ACC_PROBLEM : 37|1@0+ (1,0) [0|1] "" BDY
  SG_ ACC_ON : 52|1@0+ (1,0) [0|1] "" XXX
