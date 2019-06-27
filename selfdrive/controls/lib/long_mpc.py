@@ -11,6 +11,28 @@ from common.numpy_fast import interp
 import math
 import time
 
+# One, two and three bar distances (in s)
+ONE_BAR_DISTANCE = 1.0  # in seconds
+TWO_BAR_DISTANCE = 1.3  # in seconds
+THREE_BAR_DISTANCE = 1.8  # in seconds
+FOUR_BAR_DISTANCE = 2.1   # in seconds
+
+TR = TWO_BAR_DISTANCE  # default interval
+
+# Variables that change braking profiles
+CITY_SPEED = 19.44  # braking profile changes when below this speed based on following dynamics below [m/s]
+STOPPING_DISTANCE = 3  # increase distance from lead car when stopped
+
+# Braking profile changes (makes the car brake harder because it wants to be farther from the lead car - increase to brake harder)
+ONE_BAR_PROFILE = [ONE_BAR_DISTANCE, 2.1]
+ONE_BAR_PROFILE_BP = [0.25, 4.0]
+
+TWO_BAR_PROFILE = [TWO_BAR_DISTANCE, 2.1]
+TWO_BAR_PROFILE_BP = [0.35, 4.0]
+
+THREE_BAR_PROFILE = [THREE_BAR_DISTANCE, 2.1]
+THREE_BAR_PROFILE_BP = [0.45, 4.0]
+
 class LongitudinalMpc(object):
   def __init__(self, mpc_id, live_longitudinal_mpc):
     self.live_longitudinal_mpc = live_longitudinal_mpc
@@ -24,6 +46,8 @@ class LongitudinalMpc(object):
     self.prev_lead_status = False
     self.prev_lead_x = 0.0
     self.new_lead = False
+    self.v_rel = 0.0
+    self.lastTR = 2
     self.v_ego = 0.0
     self.car_state = None
 
@@ -108,19 +132,19 @@ class LongitudinalMpc(object):
 
   def smooth_follow(self):  # in m/s
     x_vel = [0.0, 5.222, 11.164, 14.937, 20.973, 33.975, 42.469]
-    y_mod = [0.542, 0.553, 0.599, 0.68, 0.75, 0.855, 0.9]
+    y_mod = [1.642, 1.653, 1.6, 1.68, 1.75, 1.855, 1.9]
 
-    if self.v_ego > 4.4704:  # 10 mph
+    if self.v_ego > 6.7056:  # 8 mph
       TR = interp(self.v_ego, x_vel, y_mod)
     else:  # this allows us to get slightly closer to the lead car when stopping, while being able to have smooth stop and go
       x = [4.4704, 6.7056]  # smoothly ramp TR between 10 and 15 mph from 1.8s to defined TR above at 15mph
-      y = [1.8, interp(x[1], x_vel, y_mod)]
+      y = [2.0, interp(x[1], x_vel, y_mod)]
       TR = interp(self.v_ego, x, y)
 
     if self.v_lead is not None:  # since the new mpc now handles braking nicely, simplify mods
-      x = [0, 0.3, 0.61, 1.26, 2.1, 2.68, 2.9]  # relative velocity values
-      y = [0, -0.153, -0.117, -0.153, -0.154, -0.172, -0.192]  # modification values
-      v_lead = self.v_lead + 1
+      x = [0, 0.61, 1.26, 2.1, 2.68]  # relative velocity values
+      y = [-1, -0.217, -0.053, -0.154, -0.272]  # modification values
+      v_lead = self.v_lead
       TR_mod = interp(v_lead + self.v_ego, x, y)  # quicker acceleration/don't brake when lead is overtaking
 
       x = [-1.49, -1.1, -0.67, 0.0, 0.67, 1.1, 1.49]
@@ -132,7 +156,7 @@ class LongitudinalMpc(object):
     if TR < 0.9:
       return 0.9
     else:
-      return round(TR, 3)
+      return round(TR, 4)
 
   def get_cost(self, TR):
     x = [.9, 1.3, 1.8, 2.1]
@@ -142,38 +166,10 @@ class LongitudinalMpc(object):
       if abs(real_TR - TR) >= .25:  # use real TR if diff is greater than x safety threshold
         TR = real_TR
     if self.v_lead is not None and self.v_ego > 5:
-      factor = min(1,max(2,(self.v_lead - self.v_ego)/2 + 1.0))
+      factor = min(1,max(2,(self.v_lead - self.v_ego)/2 + .5))
       return min(round(float(interp(TR, x, y)), 3)/factor, 0.1)
     else:
       return round(float(interp(TR, x, y)), 3)
-
-  def get_TR(self):
-    read_distance_lines = self.car_state.readdistancelines
-
-    if self.v_ego < 2.0 and read_distance_lines != 2:
-      return 1.8
-    elif (self.car_state.leftBlinker or self.car_state.rightBlinker) and self.v_ego > 8.9408:  # don't get super close when signaling in a turn lane
-      if self.last_cost != 1.0:
-        self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
-        self.last_cost = 1.0
-      return 0.9  # accelerate for lane change
-    elif read_distance_lines == 1:
-      if self.last_cost != 1.0:
-        self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
-        self.last_cost = 1.0
-      return 0.9  # 10m at 40km/hr
-    elif read_distance_lines == 2:
-      self.save_car_data()
-      TR = self.smooth_follow()
-      cost = self.get_cost(TR)
-      self.libmpc.change_tr(MPC_COST_LONG.TTC, cost, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
-      self.last_cost = cost
-      return TR
-    else:
-      if self.last_cost != 0.05:
-        self.libmpc.change_tr(MPC_COST_LONG.TTC, 0.05, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
-        self.last_cost = 0.05
-      return 2.7  # 30m at 40km/hr
 
   def calc_rate(self, seconds=1.0, new_frame=False):  # return current rate of long_mpc in fps/hertz
     current_time = time.time()
@@ -205,7 +201,7 @@ class LongitudinalMpc(object):
 
     if lead is not None and lead.status:
       self.mpc_frame += 1
-      x_lead = lead.dRel+1
+      x_lead = max(0, lead.dRel - STOPPING_DISTANCE)  # increase stopping distance to car by X [m]
       v_lead = max(0.0, lead.vLead)
       a_lead = lead.aLeadK
       a_rel = lead.aRel
@@ -241,13 +237,58 @@ class LongitudinalMpc(object):
       self.prev_lead_status = False
       # Fake a fast lead car, so mpc keeps running
       self.cur_state[0].x_l = 50.0
-      self.cur_state[0].v_l = v_ego + 8.0
+      self.cur_state[0].v_l = v_ego + 10.0
       a_lead = 0.0
+      v_lead = 0.0
       self.a_lead_tau = _LEAD_ACCEL_TAU
+
+    # Calculate conditions
+    self.v_rel = v_lead - v_ego   # calculate relative velocity vs lead car
+
+    # Is the car running surface street speeds?
+    if v_ego < CITY_SPEED:
+      self.street_speed = 1
+    else:
+      self.street_speed = 0
 
     # Calculate mpc
     t = sec_since_boot()
-    TR = self.get_TR()
+    if self.car_state.readdistancelines == 1:
+      if self.street_speed:
+        TR = interp(-self.v_rel, ONE_BAR_PROFILE_BP, ONE_BAR_PROFILE)
+      else:
+        TR = ONE_BAR_DISTANCE
+      if self.car_state.readdistancelines != self.lastTR:
+        self.libmpc.change_tr(MPC_COST_LONG.TTC, 1.0, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.lastTR = self.car_state.readdistancelines
+    elif self.car_state.readdistancelines == 2:
+      if self.street_speed:
+        TR = interp(-self.v_rel, TWO_BAR_PROFILE_BP, TWO_BAR_PROFILE)
+      else:
+        TR = TWO_BAR_DISTANCE
+      if self.car_state.readdistancelines != self.lastTR:
+        self.libmpc.change_tr(MPC_COST_LONG.TTC, MPC_COST_LONG.DISTANCE, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.lastTR = self.car_state.readdistancelines
+
+    elif self.car_state.readdistancelines == 3:
+      if self.street_speed:
+        TR = interp(-self.v_rel, THREE_BAR_PROFILE_BP, THREE_BAR_PROFILE)
+      else:
+        TR = THREE_BAR_DISTANCE
+      if self.car_state.readdistancelines != self.lastTR:
+        self.libmpc.change_tr(MPC_COST_LONG.TTC, MPC_COST_LONG.DISTANCE, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.lastTR = self.car_state.readdistancelines
+
+    elif self.car_state.readdistancelines == 4:
+      TR = FOUR_BAR_DISTANCE
+      if self.car_state.readdistancelines != self.lastTR:
+        self.libmpc.change_tr(MPC_COST_LONG.TTC, MPC_COST_LONG.DISTANCE, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+        self.lastTR = self.car_state.readdistancelines
+
+    else:
+     TR = TWO_BAR_DISTANCE # if readdistancelines != 1,2,3,4
+     self.libmpc.change_tr(MPC_COST_LONG.TTC, MPC_COST_LONG.DISTANCE, MPC_COST_LONG.ACCELERATION, MPC_COST_LONG.JERK)
+
     n_its = self.libmpc.run_mpc(self.cur_state, self.mpc_solution, self.a_lead_tau, a_lead, TR)
     duration = int((sec_since_boot() - t) * 1e9)
     self.send_mpc_solution(n_its, duration)
