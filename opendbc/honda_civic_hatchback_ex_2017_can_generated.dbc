@@ -121,7 +121,7 @@ BO_ 479 ACC_CONTROL: 8 EON
  SG_ SET_TO_1 : 20|5@0+ (1,0) [0|1] "" PCM
  SG_ CONTROL_ON : 23|3@0+ (1,0) [0|5] "" XXX
  SG_ STATE_FLAG : 7|5@0+ (1,0) [0|0] "" XXX
- SG_ GAS_COMMAND : 2|11@0+ (0.126992032,0) [0|0] "" PCM
+ SG_ GAS_COMMAND : 2|11@0+ (1,0) [0|0] "" PCM
  SG_ GAS_BRAKE : 31|13@0- (1,0) [0|0] "" XXX
  SG_ BRAKING_1 : 62|1@0+ (1,0) [0|1] "" XXX
  SG_ BRAKING_2 : 34|1@0+ (1,0) [0|1] "" XXX
