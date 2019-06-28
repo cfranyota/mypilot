@@ -11,7 +11,7 @@ from selfdrive.car.honda.readconfig import read_config_file,CarSettings
 
 #RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
 #RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
-BOSCH_MAX_DIST = 150. #max distance for radar
+BOSCH_MAX_DIST = 160. #max distance for radar
 RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
 RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
 OBJECT_MIN_PROBABILITY = 90.
