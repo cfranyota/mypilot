@@ -28,7 +28,7 @@ def upload_data():
         ftp.mkd("/Home/{}".format(username))
       except:
         pass
-      ftp.storbinary("STOR /{}/{}".format(username, filename), f)
+      ftp.storbinary("STOR /Home/{}/{}".format(username, filename), f)
     ftp.quit()
     os.remove(filepath)
     return True
