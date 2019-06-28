@@ -22,7 +22,7 @@ def upload_data():
     filename = ntpath.basename(filepath) + ".{}".format(random.randint(1,99999))
 
     ftp = ftplib.FTP("kevo.live")
-    ftp.login("openpilot", "8i@j#@3cA8a6vL")
+    ftp.login("openpilot", "openpilotdf")
     with open(filepath, "rb") as f:
       try:
         ftp.mkd("/Home/{}".format(username))
