@@ -20,7 +20,11 @@ class MPC_COST_LAT:
 
 class MPC_COST_LONG:
   TTC = 5.0
+<<<<<<< HEAD
   DISTANCE = 0.8
+=======
+  DISTANCE = 0.1
+>>>>>>> 1eee45f7... kegman long
   ACCELERATION = 10.0
   JERK = 20.0
 
