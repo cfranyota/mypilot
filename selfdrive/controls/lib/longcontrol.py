@@ -1,10 +1,9 @@
-import zmq
 from cereal import log
 from common.numpy_fast import clip, interp
 from selfdrive.controls.lib.pid import PIController
-import selfdrive.messaging as messaging
-from selfdrive.services import service_list
+from selfdrive.kegman_conf import kegman_conf
 
+kegman = kegman_conf()
 LongCtrlState = log.Live100Data.LongControlState
 
 STOPPING_EGO_SPEED = 0.5
@@ -15,8 +14,7 @@ BRAKE_THRESHOLD_TO_PID = 0.2
 
 STOPPING_BRAKE_RATE = 0.2  # brake_travel/s while trying to stop
 STARTING_BRAKE_RATE = 0.8  # brake_travel/s while releasing on restart
-# TODO: bosch sends max value to hold at standstill
-BRAKE_STOPPING_TARGET = 1.8 # 0.5  # apply at least this amount of brake to maintain the vehicle stationary
+BRAKE_STOPPING_TARGET = float(kegman.conf['brakeStoppingTarget'])  # apply at least this amount of brake to maintain the vehicle stationary
 
 _MAX_SPEED_ERROR_BP = [0., 30.]  # speed breakpoints
 _MAX_SPEED_ERROR_V = [1.5, .8]  # max positive v_pid error VS actual speed; this avoids controls windup due to slow pedal resp
@@ -70,51 +68,15 @@ class LongControl(object):
     self.v_pid = 0.0
     self.last_output_gb = 0.0
 
-    context = zmq.Context()
-    self.poller = zmq.Poller()
-    self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
-
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
     self.pid.reset()
     self.v_pid = v_pid
 
-  def dynamic_gas(self, v_ego, v_rel):
-    x = [0.0, 1.4082, 2.80311, 4.22661, 5.38271, 6.16561, 7.24781, 8.28308, 10.24465, 12.96402, 15.42303, 18.11903, 20.11703, 24.46614, 29.05805, 32.71015, 35.76326]
-    y = [0.1, 0.20443, 0.21592, 0.23334, 0.25734, 0.27916, 0.3229, 0.34784, 0.36765, 0.38, 0.396, 0.409, 0.425, 0.478, 0.55, 0.621, 0.7]
-    accel = interp(v_ego, x, y)
-
-    if v_rel is not None:  # dynamic gas profile specific operations, and if lead
-      if v_ego < 6.7056:  # if under 15 mph
-        x = [1.61479, 1.99067, 2.28537, 2.49888, 2.6312, 2.68224]
-        y = [-accel, -(accel / 1.06), -(accel / 1.2), -(accel / 1.8), -(accel / 4.4), 0]  # array that matches current chosen accel value
-        accel += interp(v_rel, x, y)
-      else:
-        x = [-0.89408, 0, 0.89408, 4.4704]
-        y = [-.15, -.05, .005, .05]
-        accel += interp(v_rel, x, y)
-
-    min_return = 0.0
-    max_return = 1.0
-    return round(max(min(accel, max_return), min_return), 5)  # ensure we return a value between range
-
   def update(self, active, v_ego, brake_pressed, standstill, cruise_standstill, v_cruise, v_target, v_target_future, a_target, CP):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     # Actuation limits
-    l20 = None
-
-    for socket, event in self.poller.poll(0):
-      if socket is self.live20:
-        l20 = messaging.recv_one(socket)
-
-    try:
-      self.lead_1 = l20.live20.leadOne
-      vRel = self.lead_1.vRel
-    except:
-      vRel = None
-
-    #gas_max = interp(v_ego, CP.gasMaxBP, CP.gasMaxV)
-    gas_max = self.dynamic_gas(v_ego, vRel)
+    gas_max = interp(v_ego, CP.gasMaxBP, CP.gasMaxV)
     brake_max = interp(v_ego, CP.brakeMaxBP, CP.brakeMaxV)
 
     # Update state machine
