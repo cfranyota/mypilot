@@ -148,12 +148,9 @@ def get_cam_can_parser(CP):
 
 class CarState(object):
   def __init__(self, CP):
-<<<<<<< HEAD
     self.trMode = 0
     self.lkMode = True
     self.read_distance_lines_prev = 3
-=======
->>>>>>> 5e4407cd... no insight
     self.CP = CP
     self.can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
     self.shifter_values = self.can_define.dv["GEARBOX"]["GEAR_SHIFTER"]
@@ -328,8 +325,6 @@ class CarState(object):
     if self.CP.carFingerprint in (CAR.PILOT, CAR.PILOT_2019, CAR.RIDGELINE):
       if self.user_brake > 0.05:
         self.brake_pressed = 1
-
-<<<<<<< HEAD
     # when user presses distance button on steering wheel
     if self.cruise_setting == 3:
       if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 0:
@@ -350,8 +345,6 @@ class CarState(object):
     if self.read_distance_lines <> self.read_distance_lines_prev:
       self.read_distance_lines_prev = self.read_distance_lines
 
-=======
->>>>>>> 5e4407cd... no insight
 # carstate standalone tester
 if __name__ == '__main__':
   import zmq

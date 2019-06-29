@@ -10,13 +10,8 @@ from selfdrive.can.packer import CANPacker
 
 # Accel limits
 ACCEL_HYST_GAP = 0.02 # don't change accel command for small oscilalitons within this value
-<<<<<<< HEAD
-ACCEL_MAX = 800.
-ACCEL_MIN = -1599.
-=======
 ACCEL_MAX = 2000.
 ACCEL_MIN = -1500.
->>>>>>> 5e4407cd... no insight
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 
 def accel_hysteresis(accel, accel_steady, enabled):
@@ -176,12 +171,7 @@ class CarController(object):
     apply_gas = clip(actuators.gas, 0., 1.)
     apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
     apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
-
-<<<<<<< HEAD
-    lkas_active = enabled and not CS.steer_not_allowed and CS.lkMode  # add LKAS button to toggle steering
-=======
     lkas_active = enabled and not CS.steer_not_allowed
->>>>>>> 5e4407cd... no insight
 
     # Send CAN commands.
     can_sends = []
