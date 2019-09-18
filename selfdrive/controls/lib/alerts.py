@@ -85,21 +85,21 @@ ALERTS = [
       "",
       "",
       AlertStatus.userPrompt, AlertSize.none,
-      Priority.LOW, VisualAlert.none, AudibleAlert.chimePrompt, 1., 2., 3.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 1., 2., 3.),
 
   Alert(
       "steerTempUnavailable",
       "",
       "",
       AlertStatus.userPrompt, AlertSize.none,
-      Priority.LOW, VisualAlert.none, AudibleAlert.chimeWarning1, .1, 2., 3.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .4, 2., 3.),
 
   Alert(
       "steerTempUnavailableMute",
       "",
       "",
       AlertStatus.userPrompt, AlertSize.none,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, .1, .2, .2),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .2, .2, .2),
 
   Alert(
       "preDriverDistracted",
