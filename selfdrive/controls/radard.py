@@ -82,7 +82,7 @@ def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True):
 
 
 class RadarD():
-  def __init__(self, mocked, delay=0):
+  def __init__(self, CP, mocked, delay=0):
     self.current_time = 0
     if CP.radarOffCan:
       self.mocked = True
