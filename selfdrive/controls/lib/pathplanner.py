@@ -97,10 +97,11 @@ class PathPlanner():
       elif sm['carState'].rightBlinker:
         lane_change_direction = LaneChangeDirection.right
 
-      if lane_change_direction == LaneChangeDirection.left:
-        torque_applied = sm['carState'].steeringTorque > 0 and sm['carState'].steeringPressed
-      else:
-        torque_applied = sm['carState'].steeringTorque < 0 and sm['carState'].steeringPressed
+      # if lane_change_direction == LaneChangeDirection.left:
+      #   torque_applied = sm['carState'].steeringTorque > 0 and sm['carState'].steeringPressed
+      # else:
+      #   torque_applied = sm['carState'].steeringTorque < 0 and sm['carState'].steeringPressed
+      torque_applied = True
 
       lane_change_prob = self.LP.l_lane_change_prob + self.LP.r_lane_change_prob
 
