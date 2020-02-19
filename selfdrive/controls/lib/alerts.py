@@ -64,42 +64,42 @@ ALERTS = [
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.chimeEngage, .2, 0., 0.),
+      Priority.MID, VisualAlert.none, AudibleAlert.chimeEngage, 1., 0., 0.),
 
   Alert(
       "disable",
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.chimeDisengage, .2, 0., 0.),
+      Priority.MID, VisualAlert.none, AudibleAlert.chimeDisengage, 1., 0., 0.),
 
   Alert(
       "fcw",
-      "BRAKE!",
-      "Risk of Collision",
-      AlertStatus.critical, AlertSize.full,
-      Priority.HIGHEST, VisualAlert.fcw, AudibleAlert.chimeWarningRepeat, 1., 2., 2.),
+      "",
+      "",
+      AlertStatus.critical, AlertSize.none,
+      Priority.HIGHEST, VisualAlert.none, AudibleAlert.chimeWarningRepeat, 1., 2., 2.),
 
   Alert(
       "fcwStock",
-      "BRAKE!",
-      "Risk of Collision",
-      AlertStatus.critical, AlertSize.full,
-      Priority.HIGHEST, VisualAlert.fcw, AudibleAlert.none, 1., 2., 2.),  # no EON chime for stock FCW
+      "",
+      "",
+      AlertStatus.critical, AlertSize.none,
+      Priority.HIGHEST, VisualAlert.none, AudibleAlert.none, 1., 2., 2.),  # no EON chime for stock FCW
 
   Alert(
       "steerSaturated",
-      "TAKE CONTROL",
-      "Turn Exceeds Steering Limit",
-      AlertStatus.userPrompt, AlertSize.mid,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimePrompt, 1., 2., 3.),
+      "",
+      "",
+      AlertStatus.userPrompt, AlertSize.none,
+      Priority.LOW, VisualAlert.none, AudibleAlert.chimePrompt, 1., 2., 3.),
 
   Alert(
       "steerTempUnavailable",
-      "TAKE CONTROL",
-      "Steering Temporarily Unavailable",
-      AlertStatus.userPrompt, AlertSize.mid,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimeWarning1, .4, 2., 3.),
+      "",
+      "",
+      AlertStatus.userPrompt, AlertSize.none,
+      Priority.LOW, VisualAlert.none, AudibleAlert.chimeWarning1, 1., 2., 3.),
 
   Alert(
       "steerTempUnavailableMute",
