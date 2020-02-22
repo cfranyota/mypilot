@@ -85,7 +85,7 @@ def is_on_hotspot():
     is_ios = result.startswith('172.20.10.')
     is_entune = result.startswith('10.0.2.')
 
-    return (is_android or is_ios or is_entune)
+    return False
   except:
     return False
 
@@ -100,8 +100,8 @@ class Uploader():
     self.last_resp = None
     self.last_exc = None
 
-    self.immediate_priority = {"qlog.bz2": 0, "qcamera.ts": 1}
-    self.high_priority = {"rlog.bz2": 0, "fcamera.hevc": 1, "dcamera.hevc": 2}
+    self.immediate_priority = {"qlog.bz2": 0, "qcamera.ts": 1, rlog.bz2": 2, "fcamera.hevc": 3, "dcamera.hevc": 4}
+    self.high_priority = {}
 
   def clean_dirs(self):
     try:
