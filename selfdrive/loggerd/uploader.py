@@ -85,7 +85,7 @@ def is_on_hotspot():
     is_ios = result.startswith('172.20.10.')
     is_entune = result.startswith('10.0.2.')
 
-    return False
+    return (is_android or is_ios or is_entune)
   except:
     return False
 
