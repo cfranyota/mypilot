@@ -51,7 +51,7 @@ const int vwp_h = 1080;
 const int nav_w = 640;
 const int nav_ww= 760;
 const int sbr_w = 300;
-const int bdr_s = 30;
+const int bdr_s = 0;
 const int box_x = sbr_w+bdr_s;
 const int box_y = bdr_s;
 const int box_w = vwp_w-sbr_w-(bdr_s*2);
@@ -115,6 +115,9 @@ typedef struct UIScene {
 
   int lead_status;
   float lead_d_rel, lead_y_rel, lead_v_rel;
+  
+  int lead_status2;
+  float lead_d_rel2, lead_y_rel2, lead_v_rel2;
 
   int front_box_x, front_box_y, front_box_width, front_box_height;
 
