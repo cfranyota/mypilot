@@ -121,7 +121,7 @@ static void draw_lead(UIState *s, float d_rel, float v_rel, float y_rel){
       fillAlpha = (int)(fmin(fillAlpha, 255));
     }
     draw_chevron(s, d_rel, y_rel, 25,
-                 nvgRGBA(201, 34, 49, fillAlpha), nvgRGBA(218, 202, 37, 255));
+                 nvgRGBA(201, 34, 49, fillAlpha), nvgRGBA(255, 255, 255, 255));
 }
 
 static void ui_draw_lane_line(UIState *s, const model_path_vertices_data *pvd, NVGcolor color) {
