@@ -231,6 +231,9 @@ static void ui_draw_track(UIState *s, bool is_mpc, track_vertices_data *pvd) {
   nvgBeginPath(s->vg);
 
   bool started = false;
+  bool is_engaged = (s->status == STATUS_ENGAGED);
+  bool is_warning = (s->status == STATUS_WARNING);
+  bool is_engageable = scene->engageable;
   float off = is_mpc?0.3:0.5;
   float lead_d = scene->lead_d_rel*2.;
   float path_height = is_mpc?(lead_d>5.)?fmin(lead_d, 25.)-fmin(lead_d*0.35, 10.):20.
@@ -252,16 +255,14 @@ static void ui_draw_track(UIState *s, bool is_mpc, track_vertices_data *pvd) {
   nvgClosePath(s->vg);
 
   NVGpaint track_bg;
-  if (is_mpc) {
-    // Draw colored MPC track
-    const uint8_t *clr = bg_colors[s->status];
-    track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
-      nvgRGBA(clr[0], clr[1], clr[2], 255), nvgRGBA(clr[0], clr[1], clr[2], 255/2));
-  } else {
-    // Draw white vision track
-    track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
-      nvgRGBA(255, 255, 255, 255), nvgRGBA(255, 255, 255, 0));
-  }
+      // Draw white vision track
+      if (is_engaged) {
+        track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4, nvgRGBA(23, 134, 68, 255), nvgRGBA(23, 134, 68, 70));
+      } else if (is_warning) {
+        track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4, nvgRGBA(218, 111, 37, 255), nvgRGBA(218, 111, 37, 0));
+      } else if (is_engageable) {
+        track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4, nvgRGBA(255, 255, 255, 255), nvgRGBA(255, 255, 255, 0));
+      }
 
   nvgFillPaint(s->vg, track_bg);
   nvgFill(s->vg);
