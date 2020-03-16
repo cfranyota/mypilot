@@ -213,6 +213,8 @@ typedef struct UIState {
   SubSocket *thermal_sock;
   SubSocket *health_sock;
   SubSocket *ubloxgnss_sock;
+  SubSocket *carstate_sock;
+  SubSocket *livempc_sock;  
   Poller * poller;
   Poller * ublox_poller;
 

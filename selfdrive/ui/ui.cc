@@ -153,6 +153,8 @@ static void ui_init(UIState *s) {
   s->thermal_sock = SubSocket::create(s->ctx, "thermal");
   s->health_sock = SubSocket::create(s->ctx, "health");
   s->ubloxgnss_sock = SubSocket::create(s->ctx, "ubloxGnss");
+  s->carstate_sock = SubSocket::create(s->ctx, "carState");
+  s->livempc_sock= SubSocket::create(s->ctx, "liveMpc");
 
   assert(s->model_sock != NULL);
   assert(s->controlsstate_sock != NULL);
@@ -162,6 +164,8 @@ static void ui_init(UIState *s) {
   assert(s->thermal_sock != NULL);
   assert(s->health_sock != NULL);
   assert(s->ubloxgnss_sock != NULL);
+  assert(s->carstate_sock != NULL);
+  assert(s->livempc_sock != NULL);
 
   s->poller = Poller::create({
                               s->model_sock,
@@ -171,7 +175,9 @@ static void ui_init(UIState *s) {
                               s->radarstate_sock,
                               s->thermal_sock,
                               s->health_sock,
-                              s->ubloxgnss_sock
+                              s->ubloxgnss_sock,
+	                            s->carstate_sock,
+                              s->livempc_sock
                              });
 
 #ifdef SHOW_SPEEDLIMIT
@@ -961,14 +967,6 @@ int main(int argc, char* argv[]) {
       set_awake(s, false);
     }
 
-    // Don't waste resources on drawing in case screen is off or car is not started.
-    if (s->awake && s->vision_connected) {
-      dashcam(s, touch_x, touch_y);
-      ui_draw(s);
-      glFinish();
-      should_swap = true;
-    }
-
     // manage hardware disconnect
     if (s->hardware_timeout > 0) {
       s->hardware_timeout--;
@@ -978,6 +976,14 @@ int main(int argc, char* argv[]) {
 
     // Don't waste resources on drawing in case screen is off
     if (s->awake) {
+      ui_draw(s);
+      glFinish();
+      should_swap = true;
+    }
+
+    // Don't waste resources on drawing in case screen is off or car is not started.
+    if (s->awake && s->vision_connected) {
+      dashcam(s, touch_x, touch_y);
       ui_draw(s);
       glFinish();
       should_swap = true;
