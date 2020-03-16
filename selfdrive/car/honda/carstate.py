@@ -88,7 +88,10 @@ def get_can_signals(CP):
                 ("MAIN_ON", "SCM_FEEDBACK", 0),
                 ("CRUISE_CONTROL_LABEL", "ACC_HUD", 0),
                 ("EPB_STATE", "EPB_STATUS", 0),
-                ("CRUISE_SPEED", "ACC_HUD", 0)]
+                ("CRUISE_SPEED", "ACC_HUD", 0),
+                ("LONG_ACCEL", "KINEMATICS",0),
+                ("LAT_ACCEL", "KINEMATICS",0),
+                ("YAW", "KINEMATICS",0)]
     checks += [("GAS_PEDAL_2", 100)]
   else:
     # Nidec signals.
@@ -430,4 +433,7 @@ class CarState(CarStateBase):
       checks = [(0x194, 100)]
 
     bus_cam = 1 if CP.carFingerprint in HONDA_BOSCH  and not CP.isPandaBlack else 2
-    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, bus_cam)
+    if CP.carFingerprint in HONDA_BOSCH:
+      return CANParser('bosch_camera', signals, checks, bus_cam)  
+    else:
+      return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, bus_cam)
