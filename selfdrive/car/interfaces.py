@@ -7,6 +7,7 @@ from selfdrive.car import gen_empty_fingerprint
 from selfdrive.controls.lib.drive_helpers import EventTypes as ET, create_event
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, SPEED_FACTOR, HONDA_BOSCH
+from common.params import Params
 
 GearShifter = car.CarState.GearShifter
 
@@ -31,11 +32,22 @@ class CarInterfaceBase():
     if CarController is not None:
       self.CC = CarController(self.cp.dbc_name, CP, self.VM)
 
+    self.lac = None
+    self.prev_lane_1 = 0
+    self.prev_lane_2 = 0
+    self.camera_keys = []
+    self.can_time = 0
+    params = Params()
+    self.user_id = params.get('DongleId')
+    self.gernbyServer = None
+    self.send_frames = 0
+    self.car_insert_format = 'userData,fingerprint=%s,user=%s ' % (self.CP.carFingerprint.replace(" ","_"), str(self.user_id)[2:-1]) 
+    self.car_insert_format += 'v_ego=%s,request=%s,angle_steers=%s,angle_rate=%s,driver_torque=%s,angle_rate_eps=%s,yaw_rate_can=%s,lateral_accel=%s,long_accel=%s,p=%s,i=%s,f=%s,angle_steers_des=%s %s\n~'
+    self.car_values = [self.car_insert_format]
     if CP.carFingerprint in HONDA_BOSCH and CP.carFingerprint not in (CAR.CRV_HYBRID, CAR.CRV, CAR.CRV_5G):
-      self.bosch_honda = True
+      self.allow_gas_press = True
     else:
-      self.bosch_honda = False      
-
+      self.allow_gas_press = False      
 
   @staticmethod
   def calc_accel_override(a_ego, a_target, v_ego, v_target):
@@ -115,7 +127,7 @@ class CarInterfaceBase():
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
     # Optionally allow to press gas at zero speed to resume.
     # e.g. Chrysler does not spam the resume button yet, so resuming with gas is handy. FIXME!
-    if (cs_out.gasPressed and (not self.bosch_honda and not self.gas_pressed_prev) and cs_out.vEgo > gas_resume_speed) or \
+    if (cs_out.gasPressed and (not self.allow_gas_press and not self.gas_pressed_prev) and cs_out.vEgo > gas_resume_speed) or \
        (cs_out.brakePressed and (not self.brake_pressed_prev or not cs_out.standstill)):
       events.append(create_event('pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
 
