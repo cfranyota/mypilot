@@ -115,6 +115,10 @@ typedef struct UIScene {
   bool speedlimit_valid;
   bool map_valid;
 
+  float output_scale;
+  bool recording;
+  float angleSteers;
+  bool steerOverride;
   float curvature;
   int engaged;
   bool engageable;

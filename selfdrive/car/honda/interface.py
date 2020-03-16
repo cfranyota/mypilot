@@ -97,6 +97,7 @@ class CarInterface(CarInterfaceBase):
       self.compute_gb = get_compute_gb_acura()
     else:
       self.compute_gb = compute_gb_honda
+    
 
   @staticmethod
   def calc_accel_override(a_ego, a_target, v_ego, v_target):
