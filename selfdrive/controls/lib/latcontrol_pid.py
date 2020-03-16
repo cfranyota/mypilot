@@ -23,16 +23,16 @@ class LatControlPID():
 
     if v_ego < 0.3 or not active:
       output_steer = 0.0
-      self.angle_rate_des = angle_steers_rate
-      self.angle_steers_des = angle_steers
       pid_log.active = False
+      self.angle_rate_des = angle_steers_rate / 100.
+      self.angle_steers_des = angle_steers
       self.pid.reset()
     else:
-      if not steer_override:
+      if not steer_override and abs(angle_steers) < 10 and v_ego > 10:
         self.angle_rate_des = min(self.angle_rate_des + self.accel_limit * v_ego, max(self.angle_rate_des - self.accel_limit * v_ego, path_plan.angleSteers - self.angle_steers_des))
         self.angle_steers_des = self.angle_steers_des + self.angle_rate_des
       else:
-        self.angle_rate_des = path_plan.angleSteers - self.angle_steers_des
+        self.angle_rate_des = angle_steers_rate / 100.
         self.angle_steers_des = path_plan.angleSteers
 
       steers_max = get_steer_max(CP, v_ego)
