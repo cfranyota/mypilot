@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-import time
 import cereal.messaging as messaging
-from opendbc.can.parser import CANParser
+#from opendbc.can.parser import CANParser
 from opendbc.can.packer import CANPacker
 from selfdrive.boardd.boardd_api_impl import can_list_to_can_capnp
 from selfdrive.car.honda.values import FINGERPRINTS, CAR
@@ -91,14 +90,4 @@ def sendcan_function(sendcan):
     steer_torque = 0.0 
 
   return (gas, brake, steer_torque)
-
-if __name__ == "__main__":
-  pm = messaging.PubMaster(['can'])
-  sendcan = messaging.sub_sock('sendcan')
-  idx = 0
-  while 1:
-    sendcan_function(sendcan)
-    can_function(pm, 10.0, idx)
-    time.sleep(0.01)
-    idx += 1
 

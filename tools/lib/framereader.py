@@ -1,8 +1,6 @@
 import os
 import sys
-import glob
 import json
-import time
 import struct
 import tempfile
 import threading
@@ -21,7 +19,6 @@ import subprocess
 from aenum import Enum
 from lru import LRU
 from functools import wraps
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tools.lib.cache import cache_path_for_file_path
 from tools.lib.exceptions import DataUnreadableError
@@ -118,8 +115,11 @@ def vidindex(fn, typ):
 def cache_fn(func):
   @wraps(func)
   def cache_inner(fn, *args, **kwargs):
-    cache_prefix = kwargs.pop('cache_prefix', None)
-    cache_path = cache_path_for_file_path(fn, cache_prefix)
+    if kwargs.pop('no_cache', None):
+      cache_path = None
+    else:
+      cache_prefix = kwargs.pop('cache_prefix', None)
+      cache_path = cache_path_for_file_path(fn, cache_prefix)
 
     if cache_path and os.path.exists(cache_path):
       with open(cache_path, "rb") as cache_file:
@@ -546,12 +546,13 @@ class BaseFrameReader(object):
   def get(self, num, count=1, pix_fmt="yuv420p"):
     raise NotImplementedError
 
-def FrameReader(fn, cache_prefix=None, readahead=False, readbehind=False, multithreaded=True):
+def FrameReader(fn, cache_prefix=None, readahead=False, readbehind=False, multithreaded=True, index_data=None):
   frame_type = fingerprint_video(fn)
   if frame_type == FrameType.raw:
     return RawFrameReader(fn)
   elif frame_type in (FrameType.h265_stream, FrameType.h264_pstream):
-    index_data = get_video_index(fn, frame_type, cache_prefix)
+    if not index_data:
+      index_data = get_video_index(fn, frame_type, cache_prefix)
     if index_data is not None and "predecom" in index_data:
       cache_path = cache_path_for_file_path(fn, cache_prefix)
       return MKVFrameReader(
