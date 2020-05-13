@@ -10,7 +10,6 @@ from selfdrive.config import Conversions as CV
 from selfdrive.swaglog import cloudlog
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_car, get_startup_event
-from selfdrive.car.disable_radar import disable_radar
 from selfdrive.controls.lib.lane_planner import CAMERA_OFFSET
 from selfdrive.controls.lib.drive_helpers import update_v_cruise, initialize_v_cruise
 from selfdrive.controls.lib.longcontrol import LongControl, STARTING_TARGET_SPEED
@@ -96,8 +95,6 @@ class Controls:
     params.put("CarParams", cp_bytes)
     put_nonblocking("CarParamsCache", cp_bytes)
     put_nonblocking("LongitudinalControl", "1" if self.CP.openpilotLongitudinalControl else "0")
-    if self.CP.openpilotLongitudinalControl and self.CP.safetyModel in [car.CarParams.SafetyModel.hondaBoschGiraffe, car.CarParams.SafetyModel.hondaBoschHarness]:
-      disable_radar(self.can_sock, self.pm.sock['sendcan'], 1 if has_relay else 0, timeout=1, retry=10)
 
     self.CC = car.CarControl.new_message()
     self.AM = AlertManager()
@@ -203,6 +200,8 @@ class Controls:
     elif self.sm['lateralPlan'].laneChangeState in [LaneChangeState.laneChangeStarting,
                                                  LaneChangeState.laneChangeFinishing]:
       self.events.add(EventName.laneChange)
+      if self.sm['pathPlan'].laneChangeState in [LaneChangeState.laneChangeStarting:
+
 
     if self.can_rcv_error or (not CS.canValid and self.sm.frame > 5 / DT_CTRL):
       self.events.add(EventName.canError)
@@ -260,7 +259,7 @@ class Controls:
       self.events.add(EventName.noTarget)
 
   def data_sample(self):
-    """Receive data from sockets and update carState"""
+    # """Receive data from sockets and update carState"""
 
     # Update carState from CAN
     can_strs = messaging.drain_sock_raw(self.can_sock, wait_for_one=True)
@@ -290,7 +289,7 @@ class Controls:
     return CS
 
   def state_transition(self, CS):
-    """Compute conditional state transitions and execute actions on state transitions"""
+    #"""Compute conditional state transitions and execute actions on state transitions"""
 
     self.v_cruise_kph_last = self.v_cruise_kph
 
@@ -367,7 +366,7 @@ class Controls:
     self.enabled = self.active or self.state == State.preEnabled
 
   def state_control(self, CS):
-    """Given the state, this function returns an actuators packet"""
+    # """Given the state, this function returns an actuators packet"""
 
     plan = self.sm['longitudinalPlan']
     path_plan = self.sm['lateralPlan']
@@ -417,7 +416,7 @@ class Controls:
     return actuators, v_acc_sol, a_acc_sol, lac_log
 
   def publish_logs(self, CS, start_time, actuators, v_acc, a_acc, lac_log):
-    """Send actuators and hud commands to the car, send controlsstate and MPC logging"""
+    # """Send actuators and hud commands to the car, send controlsstate and MPC logging"""
 
     CC = car.CarControl.new_message()
     CC.enabled = self.enabled
