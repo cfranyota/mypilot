@@ -1,7 +1,6 @@
 [submodule "panda"]
 	path = panda
-	url = ../../gregjhogan/panda.git
-	branch = honda-bosch-longitudinal
+	url = ../../commaai/panda.git
 [submodule "opendbc"]
 	path = opendbc
 	url = ../../csouers/opendbc.git
