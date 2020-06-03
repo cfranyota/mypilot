@@ -284,6 +284,8 @@ class CarState(CarStateBase):
         self.brake_switch_prev = self.brake_switch
         self.brake_switch_ts = cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH']
       else:
+        # TODO: should anything use CS.brake_switch outside this file?
+        self.brake_switch = cp.vl["BRAKE_MODULE"]['BRAKE_PRESSED'] != 0
         ret.brakePressed = cp.vl["BRAKE_MODULE"]['BRAKE_PRESSED'] != 0
       # On set, cruise set speed pulses between 254~255 and the set speed prev is set to avoid this.
       ret.cruiseState.speed = self.v_cruise_pcm_prev if cp.vl["ACC_HUD"]['CRUISE_SPEED'] > 160.0 else cp.vl["ACC_HUD"]['CRUISE_SPEED'] * CV.KPH_TO_MS
