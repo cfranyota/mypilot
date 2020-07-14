@@ -40,8 +40,8 @@ static void enable_event_processing(bool yes) {
 static void set_awake(UIState *s, bool awake) {
 #ifdef QCOM
   if (awake) {
-    // 30 second timeout at 30 fps
-    s->awake_timeout = 30*30;
+    // 30 second timeout
+    s->awake_timeout = 30*UI_FREQ;
   }
   if (s->awake != awake) {
     s->awake = awake;
@@ -65,35 +65,26 @@ static void set_awake(UIState *s, bool awake) {
 }
 
 static void update_offroad_layout_state(UIState *s) {
-  capnp::MallocMessageBuilder msg;
-  auto event = msg.initRoot<cereal::Event>();
-  event.setLogMonoTime(nanos_since_boot());
-  auto layout = event.initUiLayoutState();
-  layout.setActiveApp(s->active_app);
-  layout.setSidebarCollapsed(s->scene.uilayout_sidebarcollapsed);
-  s->pm->send("offroadLayout", msg);
-  LOGD("setting active app to %d with sidebar %d", (int)s->active_app, s->scene.uilayout_sidebarcollapsed);
-}
-
-static void navigate_to_settings(UIState *s) {
 #ifdef QCOM
-  s->active_app = cereal::UiLayoutState::App::SETTINGS;
-  update_offroad_layout_state(s);
-#else
-  // computer UI doesn't have offroad settings
-#endif
-}
-
-static void navigate_to_home(UIState *s) {
-#ifdef QCOM
-  if (s->started) {
-    s->active_app = cereal::UiLayoutState::App::NONE;
-  } else {
-    s->active_app = cereal::UiLayoutState::App::HOME;
+  static int timeout = 0;
+  static bool prev_collapsed = false;
+  static cereal::UiLayoutState::App prev_app = cereal::UiLayoutState::App::NONE;
+  if (timeout > 0) {
+    timeout--;
   }
-  update_offroad_layout_state(s);
-#else
-  // computer UI doesn't have offroad home
+  if (prev_collapsed != s->scene.uilayout_sidebarcollapsed || prev_app != s->active_app || timeout == 0) {
+    capnp::MallocMessageBuilder msg;
+    auto event = msg.initRoot<cereal::Event>();
+    event.setLogMonoTime(nanos_since_boot());
+    auto layout = event.initUiLayoutState();
+    layout.setActiveApp(s->active_app);
+    layout.setSidebarCollapsed(s->scene.uilayout_sidebarcollapsed);
+    s->pm->send("offroadLayout", msg);
+    LOGD("setting active app to %d with sidebar %d", (int)s->active_app, s->scene.uilayout_sidebarcollapsed);
+    prev_collapsed = s->scene.uilayout_sidebarcollapsed;
+    prev_app = s->active_app;
+    timeout = 2 * UI_FREQ;
+  }
 #endif
 }
 
@@ -101,21 +92,18 @@ static void handle_sidebar_touch(UIState *s, int touch_x, int touch_y) {
   if (!s->scene.uilayout_sidebarcollapsed && touch_x <= sbr_w) {
     if (touch_x >= settings_btn_x && touch_x < (settings_btn_x + settings_btn_w)
       && touch_y >= settings_btn_y && touch_y < (settings_btn_y + settings_btn_h)) {
-      navigate_to_settings(s);
+      s->active_app = cereal::UiLayoutState::App::SETTINGS;
     }
-    if (touch_x >= home_btn_x && touch_x < (home_btn_x + home_btn_w)
+    else if (touch_x >= home_btn_x && touch_x < (home_btn_x + home_btn_w)
       && touch_y >= home_btn_y && touch_y < (home_btn_y + home_btn_h)) {
-      navigate_to_home(s);
       if (s->started) {
+        s->active_app = cereal::UiLayoutState::App::NONE;
         s->scene.uilayout_sidebarcollapsed = true;
-        update_offroad_layout_state(s);
+      } else {
+        s->active_app = cereal::UiLayoutState::App::HOME;
       }
     }
   }
-}
-
-static void handle_driver_view_touch(UIState *s, int touch_x, int touch_y) {
-  int err = write_db_value("IsDriverViewEnabled", "0", 1);
 }
 
 static void handle_vision_touch(UIState *s, int touch_x, int touch_y) {
@@ -124,9 +112,8 @@ static void handle_vision_touch(UIState *s, int touch_x, int touch_y) {
     if (!s->scene.frontview) {
       s->scene.uilayout_sidebarcollapsed = !s->scene.uilayout_sidebarcollapsed;
     } else {
-      handle_driver_view_touch(s, touch_x, touch_y);
+      write_db_value("IsDriverViewEnabled", "0", 1);
     }
-    update_offroad_layout_state(s);
   }
 }
 
@@ -177,20 +164,11 @@ static int write_param_float(float param, const char* param_name, bool persisten
   return write_db_value(param_name, s, MIN(size, sizeof(s)), persistent_param);
 }
 
-static void update_offroad_layout_timeout(UIState *s, int* timeout) {
-  if (*timeout > 0) {
-    (*timeout)--;
-  } else {
-    update_offroad_layout_state(s);
-    *timeout = 2 * UI_FREQ;
-  }
-}
-
 static void ui_init(UIState *s) {
 
   pthread_mutex_init(&s->lock, NULL);
   s->sm = new SubMaster({"model", "controlsState", "uiLayoutState", "liveCalibration", "radarState", "thermal",
-                         "health", "ubloxGnss", "driverState", "dMonitoringState", "offroadLayout"
+                         "health", "ubloxGnss", "driverState", "dMonitoringState"
 #ifdef SHOW_SPEEDLIMIT
                                     , "liveMapData"
 #endif
@@ -198,6 +176,9 @@ static void ui_init(UIState *s) {
   s->pm = new PubMaster({"offroadLayout"});
 
   s->ipc_fd = -1;
+  s->scene.satelliteCount = -1;
+  s->started = false;
+  s->vision_seen = false;
 
   // init display
   s->fb = framebuffer_init("ui", 0, true, &s->fb_w, &s->fb_h);
@@ -308,20 +289,17 @@ void handle_message(UIState *s, SubMaster &sm) {
     if (!scene.frontview){ s->controls_seen = true; }
 
     auto alert_sound = scene.controls_state.getAlertSound();
-    const auto sound_none = cereal::CarControl::HUDControl::AudibleAlert::NONE;
-    if (alert_sound != s->alert_sound){
-      if (s->alert_sound != sound_none){
-        stop_alert_sound(s->alert_sound);
+    if (scene.alert_type.compare(scene.controls_state.getAlertType()) != 0) {
+      if (alert_sound == AudibleAlert::NONE) {
+        s->sound.stop();
+      } else {
+        s->sound.play(alert_sound);
       }
-      if (alert_sound != sound_none){
-        play_alert_sound(alert_sound);
-        s->alert_type = scene.controls_state.getAlertType();
-      }
-      s->alert_sound = alert_sound;
     }
     scene.alert_text1 = scene.controls_state.getAlertText1();
     scene.alert_text2 = scene.controls_state.getAlertText2();
     scene.alert_size = scene.controls_state.getAlertSize();
+    scene.alert_type = scene.controls_state.getAlertType();
     auto alertStatus = scene.controls_state.getAlertStatus();
     if (alertStatus == cereal::ControlsState::AlertStatus::USER_PROMPT) {
       update_status(s, STATUS_WARNING);
@@ -395,7 +373,7 @@ void handle_message(UIState *s, SubMaster &sm) {
   }
   if (sm.updated("health")) {
     scene.hwType = sm["health"].getHealth().getHwType();
-    s->hardware_timeout = 5*30; // 5 seconds at 30 fps
+    s->hardware_timeout = 5*UI_FREQ; // 5 seconds
   }
   if (sm.updated("driverState")) {
     scene.driver_state = sm["driverState"].getDriverState();
@@ -411,7 +389,6 @@ void handle_message(UIState *s, SubMaster &sm) {
   if (!s->started) {
     if (s->status != STATUS_STOPPED) {
       update_status(s, STATUS_STOPPED);
-      s->alert_sound_timeout = 0;
       s->vision_seen = false;
       s->controls_seen = false;
       s->active_app = cereal::UiLayoutState::App::HOME;
@@ -421,14 +398,10 @@ void handle_message(UIState *s, SubMaster &sm) {
       close(s->ipc_fd);
       s->ipc_fd = -1;
       #endif
-
-      update_offroad_layout_state(s);
     }
   } else if (s->status == STATUS_STOPPED) {
     update_status(s, STATUS_DISENGAGED);
-
     s->active_app = cereal::UiLayoutState::App::NONE;
-    update_offroad_layout_state(s);
   }
 }
 
@@ -508,7 +481,6 @@ static void ui_update(UIState *s) {
     assert(glGetError() == GL_NO_ERROR);
 
     s->scene.uilayout_sidebarcollapsed = true;
-    update_offroad_layout_state(s);
     s->scene.ui_viz_rx = (box_x-sbr_w+bdr_s*2);
     s->scene.ui_viz_rw = (box_w+sbr_w-(bdr_s*2));
     s->scene.ui_viz_ro = 0;
@@ -634,7 +606,6 @@ static int vision_subscribe(int fd, VisionPacket *rp, VisionStreamType type) {
 }
 
 static void* vision_connect_thread(void *args) {
-  int err;
   set_thread_name("vision_connect");
 
   UIState *s = (UIState*)args;
@@ -693,7 +664,7 @@ static void* light_sensor_thread(void *args) {
 
   // need to do this
   struct sensor_t const* list;
-  int count = module->get_sensors_list(module, &list);
+  module->get_sensors_list(module, &list);
 
   int SENSOR_LIGHT = 7;
 
@@ -737,6 +708,7 @@ int main(int argc, char* argv[]) {
   UIState uistate = {};
   UIState *s = &uistate;
   ui_init(s);
+
   enable_event_processing(true);
 
   pthread_t connect_thread_handle;
@@ -754,7 +726,6 @@ int main(int argc, char* argv[]) {
   TouchState touch = {0};
   touch_init(&touch);
   s->touch_fd = touch.fd;
-  ui_sound_init();
 
   // light sensor scaling params
   const bool LEON = util::read_file("/proc/cmdline").find("letv") != std::string::npos;
@@ -774,14 +745,9 @@ int main(int argc, char* argv[]) {
 
   const int MIN_VOLUME = LEON ? 12 : 9;
   const int MAX_VOLUME = LEON ? 15 : 12;
+  assert(s->sound.init(MIN_VOLUME));
 
-  set_volume(MIN_VOLUME);
-  s->volume_timeout = 5 * UI_FREQ;
   int draws = 0;
-
-  s->scene.satelliteCount = -1;
-  s->started = false;
-  s->vision_seen = false;
 
   while (!do_exit) {
     bool should_swap = false;
@@ -818,6 +784,10 @@ int main(int argc, char* argv[]) {
     if (!s->started) {
       // always process events offroad
       check_messages(s);
+
+      if (s->started) {
+        s->controls_timeout = 5 * UI_FREQ;
+      }
     } else {
       set_awake(s, true);
       // Car started, fetch a new rgb image from ipc
@@ -830,7 +800,6 @@ int main(int argc, char* argv[]) {
       // Visiond process is just stopped, force a redraw to make screen blank again.
       if (!s->started) {
         s->scene.uilayout_sidebarcollapsed = false;
-        update_offroad_layout_state(s);
         ui_draw(s);
         glFinish();
         should_swap = true;
@@ -858,42 +827,30 @@ int main(int argc, char* argv[]) {
       should_swap = true;
     }
 
-    if (s->volume_timeout > 0) {
-      s->volume_timeout--;
-    } else {
-      int volume = fmin(MAX_VOLUME, MIN_VOLUME + s->scene.controls_state.getVEgo() / 5);  // up one notch every 5 m/s
-      set_volume(volume);
-      s->volume_timeout = 5 * UI_FREQ;
-    }
+    s->sound.setVolume(fmin(MAX_VOLUME, MIN_VOLUME + s->scene.controls_state.getVEgo() / 5)); // up one notch every 5 m/s
 
-    // If car is started and controlsState times out, display an alert
     if (s->controls_timeout > 0) {
       s->controls_timeout--;
-    } else {
-      if (s->started && s->controls_seen && s->scene.alert_text2 != "Controls Unresponsive") {
+    } else if (s->started) {
+      if (!s->controls_seen) {
+        // car is started, but controlsState hasn't been seen at all
+        s->scene.alert_text1 = "openpilot Unavailable";
+        s->scene.alert_text2 = "Waiting for controls to start";
+        s->scene.alert_size = cereal::ControlsState::AlertSize::MID;
+      } else {
+        // car is started, but controls is lagging or died
         LOGE("Controls unresponsive");
-        s->scene.alert_size = cereal::ControlsState::AlertSize::FULL;
-        update_status(s, STATUS_ALERT);
+
+        if (s->scene.alert_text2 != "Controls Unresponsive") {
+          s->sound.play(AudibleAlert::CHIME_WARNING_REPEAT);
+        }
 
         s->scene.alert_text1 = "TAKE CONTROL IMMEDIATELY";
         s->scene.alert_text2 = "Controls Unresponsive";
-
-        ui_draw_vision_alert(s, s->scene.alert_size, s->status, s->scene.alert_text1.c_str(), s->scene.alert_text2.c_str());
-
-        s->alert_sound_timeout = 2 * UI_FREQ;
-        s->alert_sound = cereal::CarControl::HUDControl::AudibleAlert::CHIME_WARNING_REPEAT;
-        play_alert_sound(s->alert_sound);
+        s->scene.alert_size = cereal::ControlsState::AlertSize::FULL;
+        update_status(s, STATUS_ALERT);
       }
-
-      s->alert_sound_timeout--;
-      s->controls_seen = false;
-    }
-
-    // stop playing alert sound
-    if ((!s->started || (s->started && s->alert_sound_timeout == 0)) &&
-        s->alert_sound != cereal::CarControl::HUDControl::AudibleAlert::NONE) {
-      stop_alert_sound(s->alert_sound);
-      s->alert_sound = cereal::CarControl::HUDControl::AudibleAlert::NONE;
+      ui_draw_vision_alert(s, s->scene.alert_size, s->status, s->scene.alert_text1.c_str(), s->scene.alert_text2.c_str());
     }
 
     read_param_timeout(&s->is_metric, "IsMetric", &s->is_metric_timeout);
@@ -910,7 +867,7 @@ int main(int argc, char* argv[]) {
         s->scene.athenaStatus = NET_ERROR;
       }
     }
-    update_offroad_layout_timeout(s, &s->offroad_layout_timeout);
+    update_offroad_layout_state(s);
 
     pthread_mutex_unlock(&s->lock);
 
@@ -928,7 +885,6 @@ int main(int argc, char* argv[]) {
   }
 
   set_awake(s, true);
-  ui_sound_destroy();
 
   // wake up bg thread to exit
   pthread_mutex_lock(&s->lock);

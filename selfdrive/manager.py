@@ -143,7 +143,7 @@ if not prebuilt:
 
         # Show TextWindow
         error_s = "\n \n".join(["\n".join(textwrap.wrap(e, 65)) for e in errors])
-        with TextWindow("Openpilot failed to build\n \n" + error_s) as t:
+        with TextWindow("openpilot failed to build\n \n" + error_s) as t:
           t.wait_for_exit()
 
         exit(1)
@@ -161,7 +161,6 @@ from selfdrive.loggerd.config import ROOT
 from selfdrive.launcher import launcher
 from common import android
 from common.apk import update_apks, pm_apply_packages, start_offroad
-from common.manager_helpers import print_cpu_usage
 
 ThermalStatus = cereal.log.ThermalData.ThermalStatus
 
@@ -428,9 +427,6 @@ def manager_thread():
   # now loop
   thermal_sock = messaging.sub_sock('thermal')
 
-  if os.getenv("GET_CPU_USAGE"):
-    proc_sock = messaging.sub_sock('procLog', conflate=True)
-
   cloudlog.info("manager start")
   cloudlog.info({"environ": os.environ})
 
@@ -460,9 +456,6 @@ def manager_thread():
       del managed_processes[k]
 
   logger_dead = False
-
-  start_t = time.time()
-  first_proc = None
 
   while 1:
     msg = messaging.recv_sock(thermal_sock, wait=True)
@@ -504,20 +497,6 @@ def manager_thread():
     if params.get("DoUninstall", encoding='utf8') == "1":
       break
 
-    if os.getenv("GET_CPU_USAGE"):
-      dt = time.time() - start_t
-
-      # Get first sample
-      if dt > 30 and first_proc is None:
-        first_proc = messaging.recv_sock(proc_sock)
-
-      # Get last sample and exit
-      if dt > 90:
-        last_proc = messaging.recv_sock(proc_sock, wait=True)
-
-        cleanup_all_processes(None, None)
-        sys.exit(print_cpu_usage(first_proc, last_proc))
-
 def manager_prepare(spinner=None):
   # build all processes
   os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -540,11 +519,12 @@ def uninstall():
 def main():
   os.environ['PARAMS_PATH'] = PARAMS
 
-  # the flippening!
-  os.system('LD_LIBRARY_PATH="" content insert --uri content://settings/system --bind name:s:user_rotation --bind value:i:1')
+  if ANDROID:
+    # the flippening!
+    os.system('LD_LIBRARY_PATH="" content insert --uri content://settings/system --bind name:s:user_rotation --bind value:i:1')
 
-  # disable bluetooth
-  os.system('service call bluetooth_manager 8')
+    # disable bluetooth
+    os.system('service call bluetooth_manager 8')
 
   params = Params()
   params.manager_start()

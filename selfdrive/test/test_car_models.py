@@ -192,6 +192,14 @@ routes = {
     'carFingerprint': HYUNDAI.PALISADE,
     'enableCamera': True,
   },
+  "610ebb9faaad6b43|2020-06-13--15-28-36": {
+    'carFingerprint': HYUNDAI.IONIQ_EV_LTD,
+    'enableCamera': True,
+  },
+  "2c5cf2dd6102e5da|2020-06-26--16-00-08": {
+    'carFingerprint': HYUNDAI.IONIQ,
+    'enableCamera': True,
+  },
   "f7b6be73e3dfd36c|2019-05-12--18-07-16": {
     'carFingerprint': TOYOTA.AVALON,
     'enableCamera': False,
@@ -352,6 +360,14 @@ routes = {
     'carFingerprint': VOLKSWAGEN.GOLF,
     'enableCamera': True,
   },
+  "3c8f0c502e119c1c|2020-06-30--12-58-02": {
+    'carFingerprint': SUBARU.ASCENT,
+    'enableCamera': True,
+  },
+  "c321c6b697c5a5ff|2020-06-23--11-04-33": {
+    'carFingerprint': SUBARU.FORESTER,
+    'enableCamera': True,
+  },
   "791340bc01ed993d|2019-03-10--16-28-08": {
     'carFingerprint': SUBARU.IMPREZA,
     'enableCamera': True,
@@ -364,12 +380,12 @@ routes = {
     'carFingerprint': NISSAN.LEAF,
     'enableCamera': True,
   },
-  "32a319f057902bb3|2020-04-27--15-18-58": {
-    'carFingerprint': MAZDA.CX5,
-    'enableCamera': True,
-  },
   "059ab9162e23198e|2020-05-30--09-41-01": {
     'carFingerprint': NISSAN.ROGUE,
+    'enableCamera': True,
+  },
+  "32a319f057902bb3|2020-04-27--15-18-58": {
+    'carFingerprint': MAZDA.CX5,
     'enableCamera': True,
   },
 }

@@ -32,6 +32,7 @@ import signal
 from pathlib import Path
 import fcntl
 import threading
+import time
 from cffi import FFI
 
 from common.basedir import BASEDIR
@@ -316,8 +317,10 @@ def attempt_update():
 def main():
   update_failed_count = 0
   overlay_init_done = False
-  wait_helper = WaitTimeHelper()
   params = Params()
+
+  if params.get("DisableUpdates") == b"1":
+    raise RuntimeError("updates are disabled by param")
 
   if not os.geteuid() == 0:
     raise RuntimeError("updated must be launched as root!")
@@ -332,6 +335,11 @@ def main():
     fcntl.flock(ov_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
   except IOError:
     raise RuntimeError("couldn't get overlay lock; is another updated running?")
+
+  # Wait a short time before our first update attempt
+  # Avoids race with IsOffroad not being set, reduces manager startup load
+  time.sleep(30)
+  wait_helper = WaitTimeHelper()
 
   while True:
     update_failed_count += 1
