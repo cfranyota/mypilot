@@ -200,8 +200,6 @@ class Controls:
     elif self.sm['lateralPlan'].laneChangeState in [LaneChangeState.laneChangeStarting,
                                                  LaneChangeState.laneChangeFinishing]:
       self.events.add(EventName.laneChange)
-      if self.sm['pathPlan'].laneChangeState in [LaneChangeState.laneChangeStarting:
-
 
     if self.can_rcv_error or (not CS.canValid and self.sm.frame > 5 / DT_CTRL):
       self.events.add(EventName.canError)
@@ -259,7 +257,7 @@ class Controls:
       self.events.add(EventName.noTarget)
 
   def data_sample(self):
-    # """Receive data from sockets and update carState"""
+    """Receive data from sockets and update carState"""
 
     # Update carState from CAN
     can_strs = messaging.drain_sock_raw(self.can_sock, wait_for_one=True)
@@ -289,7 +287,7 @@ class Controls:
     return CS
 
   def state_transition(self, CS):
-    #"""Compute conditional state transitions and execute actions on state transitions"""
+    """Compute conditional state transitions and execute actions on state transitions"""
 
     self.v_cruise_kph_last = self.v_cruise_kph
 
@@ -366,7 +364,7 @@ class Controls:
     self.enabled = self.active or self.state == State.preEnabled
 
   def state_control(self, CS):
-    # """Given the state, this function returns an actuators packet"""
+    """Given the state, this function returns an actuators packet"""
 
     plan = self.sm['longitudinalPlan']
     path_plan = self.sm['lateralPlan']
@@ -416,7 +414,7 @@ class Controls:
     return actuators, v_acc_sol, a_acc_sol, lac_log
 
   def publish_logs(self, CS, start_time, actuators, v_acc, a_acc, lac_log):
-    # """Send actuators and hud commands to the car, send controlsstate and MPC logging"""
+    """Send actuators and hud commands to the car, send controlsstate and MPC logging"""
 
     CC = car.CarControl.new_message()
     CC.enabled = self.enabled
