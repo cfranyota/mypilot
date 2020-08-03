@@ -4,9 +4,11 @@ from common.realtime import DT_CTRL
 from selfdrive.controls.lib.drive_helpers import rate_limit
 from common.numpy_fast import clip, interp
 from selfdrive.car import create_gas_command
-from selfdrive.car.honda import hondacan
+from selfdrive.car.honda import hondacan, teslaradarcan
 from selfdrive.car.honda.values import CruiseButtons, CAR, VISUAL_HUD, HONDA_BOSCH, CarControllerParams
 from opendbc.can.packer import CANPacker
+from common.params import Params
+
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -90,6 +92,22 @@ class CarController():
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
 
+    # begin tesla radar
+    p = Params()
+    self.radarVin_idx = 0
+    # set the radar vin if you want to use the tesla radar
+    self.useTeslaRadar = 1 if p.get("TeslaRadarVin") != "00000000000000000" else 0
+    if self.useTeslaRadar:
+      # info on this is available at https://tinkla.us/index.php/Tesla_Bosch_Radar
+      self.RadarVin = p.get("TeslaRadarVin")
+      self.RadarOffset = p.get("TeslaRadarOffset")
+      self.RadarPosition = p.get("TeslaRadarPosition")
+      self.RadarEpasType = p.get("TeslaRadarEpasType")
+      # TODO: get this based on the car
+      self.radarBus = 2
+      self.RadarTriggerMessage = 0x17c
+    # end tesla radar
+
     self.params = CarControllerParams(CP)
 
   def update(self, enabled, CS, frame, actuators,
@@ -153,12 +171,13 @@ class CarController():
 
     # Send CAN commands.
     can_sends = []
-
-    if CS.CP.carFingerprint in HONDA_BOSCH and CS.CP.openpilotLongitudinalControl:
-      # TODO: radar disable hacked together to see if it works
-      if (frame % 10) == 0:
-        # tester present - w/ no response (keeps radar disabled)
-        can_sends.append([0x18DAB0F1, 0, b"\x02\x3E\x80\x00\x00\x00\x00\x00", 1 if CS.CP.isPandaBlack else 0])
+    # TODO: fix this in controlsd too
+    if not self.useTeslaRadar:
+      if CS.CP.carFingerprint in HONDA_BOSCH and CS.CP.openpilotLongitudinalControl:
+        # TODO: radar disable hacked together to see if it works
+        if (frame % 10) == 0:
+          # tester present - w/ no response (keeps radar disabled)
+          can_sends.append([0x18DAB0F1, 0, b"\x02\x3E\x80\x00\x00\x00\x00\x00", 1 if CS.CP.isPandaBlack else 0])
 
     # Send steering command.
     idx = frame % 4
@@ -199,5 +218,11 @@ class CarController():
             # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.
             # This prevents unexpected pedal range rescaling
             can_sends.append(create_gas_command(self.packer, apply_gas, idx))
+
+    if self.useTeslaRadar:
+      if (frame % 100 == 0):
+        can_sends.append(teslaradarcan.create_radar_VIN_msg(self.radarVin_idx, self.radarVIN, self.radarBus, self.RadarTriggerMessage, self.useTeslaRadar, self.RadarPosition, self.RadarEpasType))
+        self.radarVin_idx += 1
+        self.radarVin_idx = self.radarVin_idx % 3
 
     return can_sends
