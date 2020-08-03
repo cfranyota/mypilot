@@ -105,7 +105,7 @@ class CarController():
       self.RadarEpasType = p.get("TeslaRadarEpasType")
       # TODO: get this based on the car
       self.radarBus = 2
-      self.RadarTriggerMessage = 0x17c
+      self.RadarTriggerMessage = 0x94
     # end tesla radar
 
     self.params = CarControllerParams(CP)
