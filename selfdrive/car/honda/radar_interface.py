@@ -49,7 +49,7 @@ def _create_radard_can_parser():
   # TODO: Determine which radar we're using here
   dbc_f = 'teslaradar.dbc'
   # TODO: determine this from the car
-  bus = 2
+  bus = 0
 
   msg_a_n = len(RADAR_A_MSGS)
   msg_b_n = len(RADAR_B_MSGS)
