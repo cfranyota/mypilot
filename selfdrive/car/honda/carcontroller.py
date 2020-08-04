@@ -220,7 +220,7 @@ class CarController():
 
     if self.useTeslaRadar:
       if (frame % 100 == 0):
-        can_sends.append(teslaradarcan.create_radar_VIN_msg(self.radarVin_idx, self.radarVin, self.radarBus, self.radarTriggerMessage, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
+        can_sends.append(teslaradarcan.create_radar_VIN_msg(self.radarVin_idx, str(self.radarVin), self.radarBus, self.radarTriggerMessage, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
         self.radarVin_idx += 1
         self.radarVin_idx = self.radarVin_idx % 3
 
