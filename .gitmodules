@@ -1,6 +1,7 @@
 [submodule "panda"]
 	path = panda
-	url = ../../commaai/panda.git
+	url = ../../csouers/panda.git
+  branch = teslaradar_fake
 [submodule "opendbc"]
 	path = opendbc
 	url = ../../csouers/opendbc.git
