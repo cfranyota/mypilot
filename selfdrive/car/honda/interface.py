@@ -169,11 +169,9 @@ class CarInterface(CarInterfaceBase):
         # note: max request allowed is 4096, but request is capped at 3840 in firmware, so modifications result in 2x max
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2560, 8000], [0, 2560, 3840]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.3], [0.1]]
-        ret.lateralTuning.pid.kf = 0.00004 # for less wobble
       else:
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2560], [0, 2560]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[1.1], [0.33]]
-        ret.lateralTuning.pid.kf = 0.00006
       tire_stiffness_factor = 1.
 
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
@@ -190,11 +188,9 @@ class CarInterface(CarInterfaceBase):
       if eps_modified:
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2566, 8000], [0, 2566, 3840]] 
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.3], [0.1]] # 2.5 X
-        ret.lateralTuning.pid.kf = 0.00004 # for less wobble
       else:
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
-        ret.lateralTuning.pid.kf = 0.00006 # conservative feed-forward
       tire_stiffness_factor = 1.
       ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
       ret.longitudinalTuning.kpV = [1.2, 0.8, 0.6, 0.4]
@@ -262,11 +258,9 @@ class CarInterface(CarInterfaceBase):
         # modified request output values: 0x0000, 0x0500, 0x0A15, 0x0E6D, 0x1100, 0x1200, 0x1ACD, 0x239A, 0x2800
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2560, 10000], [0, 2560, 3840]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.3], [0.1]]
-        ret.lateralTuning.pid.kf = 0.00004 # for less wobble
       else:
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 3840], [0, 3840]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.64], [0.192]]
-        ret.lateralTuning.pid.kf = 0.00006
       tire_stiffness_factor = 0.677
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
       ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
