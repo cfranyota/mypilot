@@ -203,12 +203,10 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 15.38  # 10.93 is end-to-end spec
       if eps_modified:
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2566, 8000], [0, 2566, 3840]] 
-        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.25], [0.07]] # 3.125 X
-        ret.lateralTuning.pid.kf = 0.00004 # for less wobble
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.3], [0.1]] # 2.5 X
       else:
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
-        ret.lateralTuning.pid.kf = 0.00006 # conservative feed-forward
       tire_stiffness_factor = 1.
       ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
       ret.longitudinalTuning.kpV = [1.2, 0.8, 0.6, 0.4]
