@@ -1,5 +1,7 @@
 import numpy as np
 from common.numpy_fast import clip, interp
+from common.op_params import opParams
+
 
 def apply_deadzone(error, deadzone):
   if error > deadzone:
@@ -15,6 +17,7 @@ class LatPIDController():
     self._k_p = k_p  # proportional gain
     self._k_i = k_i  # integral gain
     self.k_f = k_f  # feedforward gain
+    self.op_params = opParams()
 
     self.pos_limit = pos_limit
     self.neg_limit = neg_limit
@@ -61,7 +64,7 @@ class LatPIDController():
 
     error = float(apply_deadzone(setpoint - measurement, deadzone))
     self.p = error * self.k_p
-    k_d = 1.
+    k_d = self.op_params.get('derivative_tune')
     d = k_d * (error - self.last_error)
     self.f = feedforward * self.k_f
 
