@@ -61,7 +61,7 @@ class opParams:
     """
 
     VT = ValueTypes()
-    self.fork_params = {'derivative_tune': Param(0.06, VT.number, 'Gain for derivative, set to 0 to disable', live=True),
+    self.fork_params = {'derivative_tune': Param(1., VT.number, 'Gain for derivative, set to 0 to disable', live=True),
 
                         'op_edit_live_mode': Param(False, bool, 'This parameter controls which mode opEdit starts in. It should be hidden from the user with the hide key', hidden=True)}
 
