@@ -46,7 +46,7 @@ DMonitoringResult dmonitoring_eval_frame(DMonitoringModelState* s, void* stream_
   uint8_t *raw_v_buf = raw_u_buf + ((width/2) * (height/2));
 
 #ifndef QCOM2
-  const int cropped_width = height/2;
+  const int cropped_width = height/1.6;
   const int cropped_height = height;
   const int global_x_offset = 0;
   const int global_y_offset = 0;
