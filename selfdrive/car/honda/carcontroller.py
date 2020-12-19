@@ -102,7 +102,6 @@ class CarController():
       self.radarVin = bytes.decode(p.get("TeslaRadarVin"))
       self.radarPosition = p.get("TeslaRadarPosition")
       self.radarEpasType = p.get("TeslaRadarEpasType")
-      # TODO: get this based on the car
       self.radarBus = 0
       self.radarTriggerMessage = 0x94
     # end tesla radar
