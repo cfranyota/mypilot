@@ -20,12 +20,19 @@ def _create_nidec_can_parser(car_fingerprint):
 
 
 BOSCH_MAX_DIST = 250.  # max distance for radar
-# use these for tracks (5 tracks)
-RADAR_A_MSGS = list(range(0x371, 0x37F, 3))
-RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
-# use these for point cloud  (32 points)
-# RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
-# RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
+
+# Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
+# definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
+USE_ALL_OBJECTS = False
+if not USE_ALL_OBJECTS:
+  # use these for tracks (5 tracks)
+  RADAR_A_MSGS = list(range(0x371, 0x37F, 3))
+  RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
+else:
+  # use these for point cloud  (32 points)
+  RADAR_A_MSGS = list(range(0x310, 0x36F, 3))
+  RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
+
 OBJECT_MIN_PROBABILITY = 50.
 CLASS_MIN_PROBABILITY = 50.
 RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9  # time in ns, radar sends data at 0.06 s
