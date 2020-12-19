@@ -6,6 +6,7 @@ from opendbc.can.parser import CANParser
 from selfdrive.car.interfaces import RadarInterfaceBase
 from selfdrive.car.honda.values import DBC
 from common.params import Params
+import os
 
 
 def _create_nidec_can_parser(car_fingerprint):
