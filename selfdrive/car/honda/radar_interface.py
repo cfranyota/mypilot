@@ -48,9 +48,6 @@ AHB_STATIONARY_MARGIN = 1.8  # m/s
 AHB_DEBUG = False
 AHB_MAX_DISTANCE = 100  # ignore if more than 100m
 
-# Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
-# definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
-USE_ALL_OBJECTS = False
 
 def _create_radard_can_parser():
   # TODO: Determine which radar we're using here
