@@ -112,11 +112,9 @@ class RadarInterface(RadarInterfaceBase):
       else:
         # Nidec
         self.rcp = _create_nidec_can_parser(CP.carFingerprint)
-
-    self.trigger_msg = 0x445
-    self.updated_messages = set()
-
-    self.delay = int(round(0.1 / CP.radarTimeStep))   # 0.1s delay of radar
+        self.trigger_msg = 0x445
+        self.updated_messages = set()
+        self.delay = int(round(0.1 / CP.radarTimeStep))   # 0.1s delay of radar
 
   # def update(self, can_strings, v_ego):
   def update(self, can_strings):
@@ -170,7 +168,7 @@ class RadarInterface(RadarInterfaceBase):
       elif cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
         self.valid_cnt[message] += 1
       else:
-        self.valid_cnt[message] = max(self.valid_cnt[message] -20, 0)
+        self.valid_cnt[message] = max(self.valid_cnt[message] - 20, 0)
         if (self.valid_cnt[message] == 0) and (message in self.pts):
           del self.pts[message]
           # del self.extPts[message]
@@ -190,7 +188,7 @@ class RadarInterface(RadarInterfaceBase):
       # if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
       #     (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and \
       #     (cpt2['Class'] < 4) and ((cpt['LongSpeed'] >= AHB_STATIONARY_MARGIN - v_ego) or (v_ego < 2)):
-      if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']> 0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
+      if (cpt['Valid'] or cpt['Tracked']) and (cpt['LongDist'] > 0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
           (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and \
           (cpt2['Class'] < 4):
         if message not in self.pts and (cpt['Tracked']):
@@ -251,6 +249,6 @@ if __name__ == "__main__":
     # print(chr(27) + "[2J")
     # print(ret,retext)
     # ret = RI.update(can_strings = None, v_ego = 0.)
-    ret = RI.update(can_strings = None)
+    ret = RI.update(can_strings=None)
     print(chr(27) + "[2J")
     print(ret)
