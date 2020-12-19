@@ -53,7 +53,6 @@ VALID_MESSAGE_COUNT_THRESHOLD = 4
 def _create_radard_can_parser():
   # TODO: Determine which radar we're using here
   dbc_f = 'teslaradar.dbc'
-  # TODO: determine this from the car
   bus = 0
 
   msg_a_n = len(RADAR_A_MSGS)
