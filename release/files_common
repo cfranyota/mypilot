@@ -117,6 +117,7 @@ selfdrive/car/honda/radar_interface.py
 selfdrive/car/honda/values.py
 selfdrive/car/honda/carcontroller.py
 selfdrive/car/honda/hondacan.py
+selfdrive/car/honda/teslaradarcan.py
 selfdrive/car/hyundai/__init__.py
 selfdrive/car/hyundai/carstate.py
 selfdrive/car/hyundai/interface.py
