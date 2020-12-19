@@ -6,7 +6,6 @@ from opendbc.can.parser import CANParser
 from selfdrive.car.interfaces import RadarInterfaceBase
 from selfdrive.car.honda.values import DBC
 from common.params import Params
-import os
 
 
 def _create_nidec_can_parser(car_fingerprint):
@@ -50,9 +49,8 @@ VALID_MESSAGE_COUNT_THRESHOLD = 4
 # AHB_MAX_DISTANCE = 100  # ignore if more than 100m
 
 
-def _create_radard_can_parser():
-  # TODO: Determine which radar we're using here
-  dbc_f = 'teslaradar.dbc'
+def _create_tesla_can_parser(car_fingerprint):
+  # TODO: Determine which radar we're using automagically
   bus = 0
 
   msg_a_n = len(RADAR_A_MSGS)
@@ -74,7 +72,7 @@ def _create_radard_can_parser():
 
   checks = list(zip(RADAR_A_MSGS + RADAR_B_MSGS, [6]*(msg_a_n + msg_b_n)))
 
-  return CANParser(os.path.splitext(dbc_f)[0].encode('utf8'), signals, checks, bus)
+  return CANParser(DBC[car_fingerprint]['radar'], signals, checks, bus)
 
 
 class RadarInterface(RadarInterfaceBase):
@@ -104,7 +102,7 @@ class RadarInterface(RadarInterfaceBase):
         self.pts = {}
         # self.extPts = {}
         self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
-        self.rcp = _create_radard_can_parser()
+        self.rcp = _create_tesla_can_parser(CP.carFingerprint)
         self.radarOffset = params.get("TeslaRadarOffset")
         self.trackId = 1
         self.trigger_start_msg = RADAR_A_MSGS[0]
