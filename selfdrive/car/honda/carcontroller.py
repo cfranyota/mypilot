@@ -99,7 +99,8 @@ class CarController():
     self.useTeslaRadar = 1 if p.get("TeslaRadarVin") != "00000000000000000" else 0
     if self.useTeslaRadar:
       # info on this is available at https://tinkla.us/index.php/Tesla_Bosch_Radar
-      self.radarVin = p.get("TeslaRadarVin")
+      radarVin = p.get("TeslaRadarVin")
+      self.radarVin = radarVin.decode()
       self.radarPosition = p.get("TeslaRadarPosition")
       self.radarEpasType = p.get("TeslaRadarEpasType")
       self.radarBus = 0
@@ -220,7 +221,6 @@ class CarController():
     if self.useTeslaRadar:
       if (frame % 100 == 0):
         can_sends.append(teslaradarcan.create_radar_VIN_msg(self.radarVin_idx, str(self.radarVin), self.radarBus, self.radarTriggerMessage, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
-        print("sending tesla vin msg")
         self.radarVin_idx += 1
         self.radarVin_idx = self.radarVin_idx % 3
 
