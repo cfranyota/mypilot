@@ -41,12 +41,12 @@ VALID_MESSAGE_COUNT_THRESHOLD = 4
 # they are use to detect objects that are moving either in the same direction with us or towards us
 # for AHB radar is forced in low speed mode that widents the angle and reduces distance
 # in these cases at night we will rely on visual radar to detect the lead car
-AHB_VALID_MESSAGE_COUNT_THRESHOLD = 4  # -1 to use any point
-AHB_OBJECT_MIN_PROBABILITY = 20.  # 0. to use any point
-AHB_CLASS_MIN_PROBABILITY = 10.  # 0. to use any point
-AHB_STATIONARY_MARGIN = 1.8  # m/s
-AHB_DEBUG = False
-AHB_MAX_DISTANCE = 100  # ignore if more than 100m
+# AHB_VALID_MESSAGE_COUNT_THRESHOLD = 4  # -1 to use any point
+# AHB_OBJECT_MIN_PROBABILITY = 20.  # 0. to use any point
+# AHB_CLASS_MIN_PROBABILITY = 10.  # 0. to use any point
+# AHB_STATIONARY_MARGIN = 1.8  # m/s
+# AHB_DEBUG = False
+# AHB_MAX_DISTANCE = 100  # ignore if more than 100m
 
 
 def _create_radard_can_parser():
@@ -91,7 +91,7 @@ class RadarInterface(RadarInterfaceBase):
     self.TRACK_RIGHT_LANE = False
     self.updated_messages = set()
     self.canErrorCounter = 0
-    self.AHB_car_detected = False
+    # self.AHB_car_detected = False
     self.track_id = 0
     self.radar_fault = False
     self.radar_wrong_config = False
