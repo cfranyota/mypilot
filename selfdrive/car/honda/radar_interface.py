@@ -79,9 +79,7 @@ class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
     params = Params()
-    # TODO: get this from a param elsewhere
-    use_tesla = True
-    # radar
+    use_tesla = params.get("TeslaRadarActivate")
     self.pts = {}
     # self.extPts = {}
     self.delay = 0
