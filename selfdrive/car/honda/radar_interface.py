@@ -50,7 +50,6 @@ VALID_MESSAGE_COUNT_THRESHOLD = 4
 
 
 def _create_tesla_can_parser(car_fingerprint):
-  # TODO: Determine which radar we're using automagically
   bus = 0
 
   msg_a_n = len(RADAR_A_MSGS)
