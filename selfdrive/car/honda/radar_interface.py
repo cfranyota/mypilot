@@ -202,6 +202,8 @@ class RadarInterface(RadarInterfaceBase):
           self.pts[message].aRel = cpt['LongAccel']
           self.pts[message].yvRel = cpt2['LatSpeed']
           self.pts[message].measured = bool(cpt['Meas'])
+
+          print(cpt['LongDist'], cpt['LatDist'] - self.radarOffset, cpt['LongAccel'])
           # self.extPts[message].dz = cpt2['dZ']
           # self.extPts[message].movingState = cpt2['MovingState']
           # self.extPts[message].length = cpt2['Length']
