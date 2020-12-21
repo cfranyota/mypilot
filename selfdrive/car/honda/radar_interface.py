@@ -23,7 +23,7 @@ BOSCH_MAX_DIST = 250.  # max distance for radar
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
 # definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
-USE_ALL_OBJECTS = False
+USE_ALL_OBJECTS = True
 if not USE_ALL_OBJECTS:
   # use these for tracks (5 tracks)
   RADAR_A_MSGS = list(range(0x371, 0x37F, 3))
@@ -100,7 +100,7 @@ class RadarInterface(RadarInterfaceBase):
         # self.extPts = {}
         self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
         self.rcp = _create_tesla_can_parser(CP.carFingerprint)
-        self.radarOffset = params.get("TeslaRadarOffset")
+        self.radarOffset = float(params.get("TeslaRadarOffset"))
         self.trackId = 1
         self.trigger_start_msg = RADAR_A_MSGS[0]
         self.trigger_end_msg = RADAR_B_MSGS[-1]
@@ -202,7 +202,6 @@ class RadarInterface(RadarInterfaceBase):
           self.pts[message].yvRel = cpt2['LatSpeed']
           self.pts[message].measured = bool(cpt['Meas'])
 
-          print(cpt['LongDist'], cpt['LatDist'] - self.radarOffset, cpt['LongAccel'])
           # self.extPts[message].dz = cpt2['dZ']
           # self.extPts[message].movingState = cpt2['MovingState']
           # self.extPts[message].length = cpt2['Length']
