@@ -8,6 +8,15 @@ from selfdrive.car.honda.values import DBC
 from common.params import Params
 
 
+# for a calibration. move to test script
+# for calibration we only want fixed objects within 2 m of the center line and between 2.5 and 4.5 m far from radar
+CALIBRATION = True
+MINX = 2.5
+MAXX = 4.5
+MINY = -2.0
+MAXY = 2.0
+
+
 def _create_nidec_can_parser(car_fingerprint):
   radar_messages = [0x400] + list(range(0x430, 0x43A)) + list(range(0x440, 0x446))
   signals = list(zip(['RADAR_STATE'] +
@@ -90,13 +99,7 @@ class RadarInterface(RadarInterfaceBase):
     self.track_id = 0
     self.radar_fault = False
     self.radar_wrong_config = False
-
-    #  a hack
-    if CP is not None:
-      self.radar_off_can = CP.radarOffCan
-    else:
-      self.radar_off_can = False
-
+    self.radar_off_can = CP.radarOffCan
     self.radar_ts = CP.radarTimeStep
     if self.radar_off_can:
       self.rcp = None
@@ -161,6 +164,10 @@ class RadarInterface(RadarInterfaceBase):
       # ensure the two messages are from the same frame reading
       if cpt['Index'] != cpt2['Index2']:
         continue
+      # TODO: move later
+      if CALIBRATION:
+        if (cpt['LongDist'] >= MINX) and (cpt['LongDist'] <= MAXX) and (cpt['LatDist'] >= MINY) and (cpt['LatDist'] <= MAXY):
+          print (cpt)
       if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist'] == 0) or (not cpt['Tracked']) or (not cpt['Valid']):
         self.valid_cnt[message] = 0    # reset counter
         if message in self.pts:
