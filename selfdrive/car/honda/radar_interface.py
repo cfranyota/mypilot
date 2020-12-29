@@ -10,9 +10,9 @@ from common.params import Params
 
 # for a calibration. move to test script
 # for calibration we only want fixed objects within 2 m of the center line and between 2.5 and 4.5 m far from radar
-CALIBRATION = True
-MINX = 2.5
-MAXX = 4.5
+CALIBRATION = False
+MINX = 1
+MAXX = 6
 MINY = -2.0
 MAXY = 2.0
 
@@ -167,7 +167,7 @@ class RadarInterface(RadarInterfaceBase):
       # TODO: move later
       if CALIBRATION:
         if (cpt['LongDist'] >= MINX) and (cpt['LongDist'] <= MAXX) and (cpt['LatDist'] >= MINY) and (cpt['LatDist'] <= MAXY):
-          print (cpt)
+          print(cpt['LongDist'], end=" "), print(cpt['LatDist'], end=" "), print(cpt['ProbExist'])
       if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist'] == 0) or (not cpt['Tracked']) or (not cpt['Valid']):
         self.valid_cnt[message] = 0    # reset counter
         if message in self.pts:
