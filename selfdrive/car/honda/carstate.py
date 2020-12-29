@@ -80,6 +80,12 @@ def get_can_signals(CP):
     ]
 
   if CP.carFingerprint in HONDA_BOSCH:
+    # needed for longitundinal control
+    signals += [("WHEEL_TICKS", "WHEEL_TICK_FL", 0),
+                ("WHEEL_TICKS", "WHEEL_TICK_FR", 0),
+                ("WHEEL_TICKS", "WHEEL_TICK_RL", 0),
+                ("WHEEL_TICKS", "WHEEL_TICK_RR", 0)]
+
     # Civic is only bosch to use the same brake message as other hondas.
     if CP.carFingerprint not in (CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT):
       signals += [("BRAKE_PRESSED", "BRAKE_MODULE", 0)]
@@ -221,6 +227,12 @@ class CarState(CarStateBase):
     ret.wheelSpeeds.rl = cp.vl["WHEEL_SPEEDS"]['WHEEL_SPEED_RL'] * CV.KPH_TO_MS * speed_factor
     ret.wheelSpeeds.rr = cp.vl["WHEEL_SPEEDS"]['WHEEL_SPEED_RR'] * CV.KPH_TO_MS * speed_factor
     v_wheel = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr)/4.
+
+    self.FL_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_FL']
+    self.FR_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_FR']
+    self.RL_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_RL']
+    self.RR_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_RR']
+    self.avg_wheelTick = (self.FL_wheelTick + self.FR_wheelTick + self.RL_wheelTick + self.RR_wheelTick) / 4.
 
     # blend in transmission speed at low speed, since it has more low speed accuracy
     v_weight = interp(v_wheel, v_weight_bp, v_weight_v)
