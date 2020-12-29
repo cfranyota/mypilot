@@ -45,7 +45,7 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
 
 
-def create_acc_commands(packer, enabled, accel, gas, idx, stopping, starting, car_fingerprint):
+def create_acc_commands(packer, enabled, accel, gas, idx, stopped, starting, car_fingerprint):
   commands = []
   bus = get_pt_bus(car_fingerprint)
 
@@ -54,7 +54,7 @@ def create_acc_commands(packer, enabled, accel, gas, idx, stopping, starting, ca
   gas_command = gas if enabled and gas > 0 else -30000
   accel_command = accel if enabled else 0
   braking = 1 if enabled and accel < 0 else 0
-  standstill = 1 if enabled and stopping else 0
+  standstill = 1 if enabled and stopped else 0
   standstill_release = 1 if enabled and starting else 0
 
   acc_control_values = {

@@ -9,6 +9,8 @@ from selfdrive.car.honda.values import CruiseButtons, CAR, VISUAL_HUD, HONDA_BOS
 from opendbc.can.packer import CANPacker
 from common.params import Params
 
+import time
+
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -91,6 +93,9 @@ class CarController():
     self.last_pump_ts = 0.
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
+    self.stopped_ts = 0
+    self.last_wheeltick = 0
+    self.last_wheeltick_ct = 0
 
     # begin tesla radar
     p = Params()
@@ -148,14 +153,29 @@ class CarController():
     # **** process the car messages ****
 
     if CS.CP.carFingerprint in HONDA_BOSCH:
-      stopping = 0
+      stopped = 0
       starting = 0
       accel = actuators.gas - actuators.brake
-      if accel < 0 and CS.out.vEgo < 0.05:
-        # prevent rolling backwards
-        stopping = 1
-        accel = -1.0
-      elif accel > 0 and CS.out.vEgo < 0.05:
+      if accel < 0 and CS.out.vEgo == 0.:
+        # TODO: is this the best/fastest way to get time?
+        ts_now = time.time()
+        # after 6 readings of the same avg wheel tick signal, set standstill
+        if CS.avg_wheelTick == self.last_wheeltick:
+          self.last_wheeltick_ct += 1
+          # on the 6th consistent tick, log the time
+          if self.last_wheeltick_ct == 6:
+            self.stopped_ts = ts_now
+          # hold standstill for consecutive readings of 6 or more
+          if self.last_wheeltick_ct >= 6:
+            stopped = 1
+          # go to full brake after 1 second of standstill
+          if stopped and (ts_now - self.stopped_ts) >= 1:
+            accel = -1.0
+        else:
+          self.last_wheeltick = CS.avg_wheelTick
+          self.last_wheeltick_ct = 0
+          self.stopped_ts = 0
+      elif accel > 0 and (0.3 >= CS.out.vEgo >= 0):
         starting = 1
       apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
       apply_gas = interp(accel, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
@@ -204,7 +224,7 @@ class CarController():
         idx = frame // 2
         ts = frame * DT_CTRL
         if CS.CP.carFingerprint in HONDA_BOSCH:
-          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, apply_gas, idx, stopping, starting, CS.CP.carFingerprint))
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, apply_gas, idx, stopped, starting, CS.CP.carFingerprint))
         else:
           apply_gas = clip(actuators.gas, 0., 1.)
           apply_brake = int(clip(self.brake_last * P.BRAKE_MAX, 0, P.BRAKE_MAX - 1))
