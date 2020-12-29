@@ -81,10 +81,10 @@ def get_can_signals(CP):
 
   if CP.carFingerprint in HONDA_BOSCH:
     # needed for longitundinal control
-    signals += [("WHEEL_TICKS", "WHEEL_TICK_FL", 0),
-                ("WHEEL_TICKS", "WHEEL_TICK_FR", 0),
-                ("WHEEL_TICKS", "WHEEL_TICK_RL", 0),
-                ("WHEEL_TICKS", "WHEEL_TICK_RR", 0)]
+    signals += [("WHEEL_TICK_FL", "WHEEL_TICKS", 0),
+                ("WHEEL_TICK_FR", "WHEEL_TICKS", 0),
+                ("WHEEL_TICK_RL", "WHEEL_TICKS", 0),
+                ("WHEEL_TICK_RR", "WHEEL_TICKS", 0)]
 
     # Civic is only bosch to use the same brake message as other hondas.
     if CP.carFingerprint not in (CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT):
