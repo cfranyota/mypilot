@@ -4,7 +4,8 @@
   branch = teslaradar_fake
 [submodule "opendbc"]
 	path = opendbc
-	url = ../../commaai/opendbc.git
+	url = ../../csouers/opendbc.git
+        branch = wheel_ticks
 [submodule "laika_repo"]
 	path = laika_repo
 	url = ../../commaai/laika.git
