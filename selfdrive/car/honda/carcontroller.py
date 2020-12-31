@@ -9,8 +9,6 @@ from selfdrive.car.honda.values import CruiseButtons, CAR, VISUAL_HUD, HONDA_BOS
 from opendbc.can.packer import CANPacker
 from common.params import Params
 
-import time
-
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -102,7 +100,7 @@ class CarController():
     self.last_pump_ts = 0.
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
-    self.stopped_ts = 0
+    self.stopped_frame = 0
     self.last_wheeltick = 0
     self.last_wheeltick_ct = 0
 
@@ -165,25 +163,26 @@ class CarController():
       stopped = 0
       starting = 0
       accel = actuators.gas - actuators.brake
-      if accel < 0 and CS.out.vEgo == 0.:
-        # TODO: is this the best/fastest way to get time?
-        ts_now = time.time()
+      # go to standstill if desired
+      if accel < 0 and CS.out.vEgo <= 0.1:
         # after 6 readings of the same avg wheel tick signal, set standstill
         if CS.avg_wheelTick == self.last_wheeltick:
           self.last_wheeltick_ct += 1
           # on the 6th consistent tick, log the time
           if self.last_wheeltick_ct == 6:
-            self.stopped_ts = ts_now
+            self.stopped_frame = frame
           # hold standstill for consecutive readings of 6 or more
           if self.last_wheeltick_ct >= 6:
             stopped = 1
-          # go to full brake after 1 second of standstill
-          if stopped and (ts_now - self.stopped_ts) >= 1:
-            accel = -1.0
+            # go to full brake after 1 second of standstill
+            if (frame - self.stopped_frame) >= 100:
+              accel = -1.0
+        # wheeltick changed since last loop. no standstill
         else:
           self.last_wheeltick = CS.avg_wheelTick
           self.last_wheeltick_ct = 0
-          self.stopped_ts = 0
+          self.stopped_frame = 0
+      # release standstill
       elif accel > 0 and (0.3 >= CS.out.vEgo >= 0):
         starting = 1
       apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
