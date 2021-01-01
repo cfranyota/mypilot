@@ -208,12 +208,20 @@ class CarController():
       print(bool(accel < 0), end=' ')
       print('|', end= ' ')
 
-      print('accel:', end=' ')
-      print(accel, end=' ')
+  #     print('accel:', end=' ')
+  #     print(round(accel, 2), end = ' ')
+  #     print('|', end= ' ')
+
+      print('gas:', end=' ')
+      print(round(actuators.gas, 2), end = ' ')
       print('|', end= ' ')
-      
+          
+      print('brake:', end=' ')
+      print(round(actuators.brake, 2), end=' ')
+      print('|', end= ' ')
+
       print('apply_accel:', end=' ')
-      print(round(apply_accel, 5), end=' ')
+      print(round(apply_accel, 2), end=' ')
       print('|', end= ' ')
 
       print('stopped:', end=' ')
