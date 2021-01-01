@@ -460,7 +460,7 @@ class CarInterface(CarInterfaceBase):
       ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
     # ret.stoppingControl = True
-    ret.startAccel = 0.5
+    # ret.startAccel = 0.5
 
     ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 0.5
