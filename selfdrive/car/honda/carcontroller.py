@@ -174,7 +174,7 @@ class CarController():
           self.last_wheeltick_ct = 0
           self.stopped_frame = 0
       # release standstill
-      elif accel > 0 and (0.3 >= CS.out.vEgo >= 0):
+      if accel >= 0 and (0.3 >= CS.out.vEgo >= 0):
         starting = 1
       apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
       apply_gas = interp(accel, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
@@ -205,32 +205,23 @@ class CarController():
     # Send dashboard UI commands.
     if (frame % 10) == 0:
       print('braking:', end=' ')
-      print(bool(accel < 0), end=' ')
+      print(bool(accel < -0.06), end=' ')
       print('|', end= ' ')
 
       print('max_brake:', end=' ')
       print(bool(accel == -1.0), end= ' ')
       print('|', end= ' ')
 
-      # print('accel:', end=' ')
-      # print(round(accel, 2), end = ' ')
-      # print('|', end= ' ')
-
-      print('gas:', end=' ')
-      print(round(actuators.gas, 2), end = ' ')
-      print('|', end= ' ')
-          
-      print('brake:', end=' ')
-      print(round(actuators.brake, 2), end=' ')
+      print('accel:', end=' ')
+      print(round(accel, 2), end = ' ')
       print('|', end= ' ')
 
       print('apply_accel:', end=' ')
-      print(round(apply_accel, 5), end=' ')
+      print(round(apply_accel, 2), end=' ')
       print('|', end= ' ')
 
       print('stopped:', end=' ')
-      print(bool(stopped), end=' ')
-      print('|')
+      print(bool(stopped))
 
       idx = (frame//10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.is_metric, idx, CS.CP.openpilotLongitudinalControl, CS.stock_hud, self.useTeslaRadar))
