@@ -116,8 +116,6 @@ typedef struct UIScene {
   std::string alert_type;
   cereal::ControlsState::AlertSize alert_size;
 
-  bool recording;
-
   cereal::HealthData::HwType hwType;
   int satelliteCount;
   NetStatus athenaStatus;
