@@ -21,6 +21,7 @@
 #include "msm_cam_sensor.h"
 
 #include "common/util.h"
+#include "common/utilpp.h"
 #include "common/timing.h"
 #include "common/swaglog.h"
 #include "common/params.h"
@@ -33,7 +34,7 @@
 #include "camera_qcom.h"
 
 
-extern volatile sig_atomic_t do_exit;
+extern ExitHandler do_exit;
 
 // global var for AE/AF ops
 std::atomic<CameraExpInfo> rear_exp{{0}};
@@ -98,9 +99,10 @@ static void camera_release_buffer(void* cookie, int buf_idx) {
   ioctl(s->isp_fd, VIDIOC_MSM_ISP_ENQUEUE_BUF, &s->ss[0].qbuf_info[buf_idx]);
 }
 
-static void camera_init(CameraState *s, int camera_id, int camera_num,
+static void camera_init(VisionIpcServer *v, CameraState *s, int camera_id, int camera_num,
                         uint32_t pixel_clock, uint32_t line_length_pclk,
-                        unsigned int max_gain, unsigned int fps, cl_device_id device_id, cl_context ctx) {
+                        unsigned int max_gain, unsigned int fps, cl_device_id device_id, cl_context ctx,
+                        VisionStreamType rgb_type, VisionStreamType yuv_type) {
   s->camera_num = camera_num;
   s->camera_id = camera_id;
 
@@ -115,7 +117,7 @@ static void camera_init(CameraState *s, int camera_id, int camera_num,
 
   s->self_recover = 0;
 
-  s->buf.init(device_id, ctx, s, FRAME_BUF_COUNT, "frame", camera_release_buffer);
+  s->buf.init(device_id, ctx, s, v, FRAME_BUF_COUNT, rgb_type, yuv_type, camera_release_buffer);
 
   pthread_mutex_init(&s->frame_info_lock, NULL);
 }
@@ -251,7 +253,7 @@ cl_program build_conv_program(cl_device_id device_id, cl_context context, int im
   return cl_program_from_file(context, device_id, "imgproc/conv.cl", args);
 }
 
-void cameras_init(MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
+void cameras_init(VisionIpcServer *v, MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
   char project_name[1024] = {0};
   property_get("ro.boot.project_name", project_name, "");
 
@@ -287,7 +289,7 @@ void cameras_init(MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
   // 508 = ISO 12800, 16x digital gain
   // 510 = ISO 25600, 32x digital gain
 
-  camera_init(&s->rear, CAMERA_ID_IMX298, 0,
+  camera_init(v, &s->rear, CAMERA_ID_IMX298, 0,
               /*pixel_clock=*/600000000, /*line_length_pclk=*/5536,
               /*max_gain=*/510,  //0 (ISO 100)- 448 (ISO 800, max analog gain) - 511 (super noisy)
 #ifdef HIGH_FPS
@@ -295,23 +297,27 @@ void cameras_init(MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
 #else
               /*fps*/ 20,
 #endif
-              device_id, ctx);
+              device_id, ctx,
+              VISION_STREAM_RGB_BACK, VISION_STREAM_YUV_BACK);
   s->rear.apply_exposure = imx298_apply_exposure;
 
   if (s->device == DEVICE_OP3T) {
-    camera_init(&s->front, CAMERA_ID_S5K3P8SP, 1,
+    camera_init(v, &s->front, CAMERA_ID_S5K3P8SP, 1,
                 /*pixel_clock=*/560000000, /*line_length_pclk=*/5120,
-                /*max_gain=*/510, 10, device_id, ctx);
+                /*max_gain=*/510, 10, device_id, ctx,
+                VISION_STREAM_RGB_FRONT, VISION_STREAM_YUV_FRONT);
     s->front.apply_exposure = imx179_s5k3p8sp_apply_exposure;
   } else if (s->device == DEVICE_LP3) {
-    camera_init(&s->front, CAMERA_ID_OV8865, 1,
+    camera_init(v, &s->front, CAMERA_ID_OV8865, 1,
                 /*pixel_clock=*/72000000, /*line_length_pclk=*/1602,
-                /*max_gain=*/510, 10, device_id, ctx);
+                /*max_gain=*/510, 10, device_id, ctx,
+                VISION_STREAM_RGB_FRONT, VISION_STREAM_YUV_FRONT);
     s->front.apply_exposure = ov8865_apply_exposure;
   } else {
-    camera_init(&s->front, CAMERA_ID_IMX179, 1,
+    camera_init(v, &s->front, CAMERA_ID_IMX179, 1,
                 /*pixel_clock=*/251200000, /*line_length_pclk=*/3440,
-                /*max_gain=*/224, 20, device_id, ctx);
+                /*max_gain=*/224, 20, device_id, ctx,
+                VISION_STREAM_RGB_FRONT, VISION_STREAM_YUV_FRONT);
     s->front.apply_exposure = imx179_s5k3p8sp_apply_exposure;
   }
 
@@ -323,8 +329,8 @@ void cameras_init(MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
 
   for (int i = 0; i < FRAME_BUF_COUNT; i++) {
     // TODO: make lengths correct
-    s->focus_bufs[i] = visionbuf_allocate(0xb80);
-    s->stats_bufs[i] = visionbuf_allocate(0xb80);
+    s->focus_bufs[i].allocate(0xb80);
+    s->stats_bufs[i].allocate(0xb80);
   }
   const int width = s->rear.buf.rgb_width/NUM_SEGMENTS_X;
   const int height = s->rear.buf.rgb_height/NUM_SEGMENTS_Y;
@@ -426,7 +432,6 @@ static void do_autoexposure(CameraState *s, float grey_frac) {
     pthread_mutex_unlock(&s->frame_info_lock);
 
     set_exposure(s, s->cur_exposure_frac, cur_gain_frac);
-
   } else { // keep the old for others
     float new_exposure = s->cur_exposure_frac;
     new_exposure *= pow(1.05, (target_grey - grey_frac) / 0.05 );
@@ -531,8 +536,6 @@ static void imx298_ois_calibration(int ois_fd, uint8_t* eeprom) {
   err = ioctl(ois_fd, VIDIOC_MSM_OIS_CFG, &cfg);
   LOG("ois reg calibration: %d", err);
 }
-
-
 
 
 static void sensors_init(MultiCameraState *s) {
@@ -780,7 +783,6 @@ static void sensors_init(MultiCameraState *s) {
   err = ioctl(sensorinit_fd, VIDIOC_MSM_SENSOR_INIT_CFG, &sensor_init_cfg);
   LOG("sensor init cfg (rear): %d", err);
   assert(err >= 0);
-
 
   struct msm_camera_sensor_slave_info slave_info2 = {0};
   if (s->device == DEVICE_LP3) {
@@ -1769,7 +1771,7 @@ static std::optional<float> get_accel_z(SubMaster *sm) {
   if (sm->update(0) > 0) {
     for (auto event : (*sm)["sensorEvents"].getSensorEvents()) {
       if (event.which() == cereal::SensorEventData::ACCELERATION) {
-        if (auto v = event.getAcceleration().getV(); v.size() >= 3) 
+        if (auto v = event.getAcceleration().getV(); v.size() >= 3)
           return -v[2];
         break;
       }
@@ -1986,10 +1988,10 @@ const char* get_isp_event_name(unsigned int type) {
 
 static FrameMetadata get_frame_metadata(CameraState *s, uint32_t frame_id) {
   pthread_mutex_lock(&s->frame_info_lock);
-  for (int i=0; i<METADATA_BUF_COUNT; i++) {
-    if (s->frame_metadata[i].frame_id == frame_id) {
+  for (auto &i : s->frame_metadata) {
+    if (i.frame_id == frame_id) {
       pthread_mutex_unlock(&s->frame_info_lock);
-      return s->frame_metadata[i];
+      return i;
     }
   }
   pthread_mutex_unlock(&s->frame_info_lock);
@@ -2025,7 +2027,7 @@ static void* ops_thread(void* arg) {
       front_op_id_last = front_op.op_id;
     }
 
-    usleep(50000);
+    util::sleep_for(50);
   }
 
   return NULL;
@@ -2121,7 +2123,7 @@ void camera_process_frame(MultiCameraState *s, CameraState *c, int cnt) {
   if (cnt % 3 == 0) {
     const int x = 290, y = 322, width = 560, height = 314;
     const int skip = 1;
-    set_exposure_target(c, (const uint8_t *)b->yuv_bufs[b->cur_yuv_idx].y, x, x + width, skip, y, y + height, skip);
+    set_exposure_target(c, (const uint8_t *)b->cur_yuv_buf->y, x, x + width, skip, y, y + height, skip);
   }
 }
 
@@ -2148,7 +2150,7 @@ void cameras_run(MultiCameraState *s) {
     fds[1].events = POLLPRI;
 
     int ret = poll(fds, ARRAYSIZE(fds), 1000);
-    if (ret <= 0) {
+    if (ret < 0) {
       if (errno == EINTR || errno == EAGAIN) continue;
       LOGE("poll failed (%d - %d)", ret, errno);
       break;
@@ -2193,7 +2195,7 @@ void cameras_run(MultiCameraState *s) {
 
         if (buffer == 0) {
           c->buf.camera_bufs_metadata[buf_idx] = get_frame_metadata(c, isp_event_data->frame_id);
-          tbuffer_dispatch(&c->buf.camera_tb, buf_idx);
+          c->buf.queue(buf_idx);
         } else {
           uint8_t *d = (uint8_t*)(c->ss[buffer].bufs[buf_idx].addr);
           if (buffer == 1) {
@@ -2245,8 +2247,8 @@ void cameras_close(MultiCameraState *s) {
   camera_close(&s->rear);
   camera_close(&s->front);
   for (int i = 0; i < FRAME_BUF_COUNT; i++) {
-    visionbuf_free(&s->focus_bufs[i]);
-    visionbuf_free(&s->stats_bufs[i]);
+    s->focus_bufs[i].free();
+    s->stats_bufs[i].free();
   }
   CL_CHECK(clReleaseMemObject(s->rgb_conv_roi_cl));
   CL_CHECK(clReleaseMemObject(s->rgb_conv_result_cl));

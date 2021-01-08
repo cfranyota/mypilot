@@ -5,7 +5,7 @@ from selfdrive.car import dbc_dict
 Ecu = car.CarParams.Ecu
 
 # Steer torque limits
-class SteerLimitParams:
+class CarControllerParams:
   def __init__(self, CP):
     if CP.carFingerprint in [CAR.SONATA, CAR.PALISADE, CAR.SANTA_FE, CAR.VELOSTER, CAR.GENESIS_G70, CAR.IONIQ_EV_2020]:
       self.STEER_MAX = 384
@@ -123,7 +123,7 @@ FINGERPRINTS = {
   }],
   CAR.IONIQ_EV_2020: [{
     127: 8, 304: 8, 320: 8, 339: 8, 352: 8, 356: 4, 524: 8, 544: 7, 593: 8, 688: 5, 832: 8, 881: 8, 882: 8, 897: 8, 902: 8, 903: 8, 905: 8, 909: 8, 916: 8, 1040: 8, 1042: 8, 1056: 8, 1057: 8, 1078: 4, 1136: 8, 1151: 6, 1155: 8, 1156: 8, 1157: 4, 1164: 8, 1168: 7, 1173: 8, 1183: 8, 1186: 2, 1191: 2, 1225: 8, 1265: 4, 1280: 1, 1287: 4, 1290: 8, 1291: 8, 1292: 8, 1294: 8, 1312: 8, 1322: 8, 1342: 6, 1345: 8, 1348: 8, 1355: 8, 1363: 8, 1369: 8, 1379: 8, 1407: 8, 1419: 8, 1426: 8, 1427: 6, 1429: 8, 1430: 8, 1456: 4, 1470: 8, 1473: 8, 1507: 8, 1535: 8, 1988: 8, 1996: 8, 2000: 8, 2004: 8, 2005: 8, 2008: 8, 2012: 8, 2013: 8
-  }],  
+  }],
   CAR.IONIQ_EV_LTD: [{
     127: 8, 304: 8, 320: 8, 339: 8, 352: 8, 356: 4, 544: 7, 593: 8, 688: 5, 832: 8, 881: 8, 882: 8, 897: 8, 902: 8, 903: 8, 916: 8, 1040: 8, 1056: 8, 1057: 8, 1078: 4, 1136: 8, 1151: 6, 1168: 7, 1173: 8, 1265: 4, 1280: 1, 1287: 4, 1290: 8, 1291: 8, 1292: 8, 1294: 8, 1322: 8, 1342: 6, 1345: 8, 1348: 8, 1355: 8, 1363: 8, 1369: 8, 1407: 8, 1419: 8, 1425: 2, 1426: 8, 1427: 6, 1429: 8, 1430: 8, 1456: 4, 1470: 8, 1507: 8, 1535: 8
   }],
@@ -160,6 +160,17 @@ FINGERPRINTS = {
 IGNORED_FINGERPRINTS = [CAR.VELOSTER, CAR.GENESIS_G70, CAR.KONA]
 
 FW_VERSIONS = {
+  CAR.IONIQ_EV_LTD: {
+    (Ecu.fwdRadar, 0x7d0, None): [
+      b'\xf1\x00AEev SCC F-CUP      1.00 1.00 96400-G7000         ',
+    ],
+    (Ecu.eps, 0x7d4, None): [
+      b'\xf1\x00AE  MDPS C 1.00 1.02 56310G7300\x00 4AEEC102',
+    ],
+    (Ecu.fwdCamera, 0x7c4, None): [
+      b'\xf1\x00AEE MFC  AT EUR LHD 1.00 1.00 95740-G7200 160418',
+    ],
+  },
   CAR.SONATA: {
     (Ecu.fwdRadar, 0x7d0, None): [
       b'\xf1\x00DN8_ SCC FHCUP      1.00 1.01 99110-L1000         ',
@@ -242,6 +253,7 @@ FW_VERSIONS = {
     ],
     (Ecu.transmission, 0x7e1, None): [
       b'\xf1\x87LBLUFN650868KF36\xa9\x98\x89\x88\xa8\x88\x88\x88h\x99\xa6\x89fw\x86gw\x88\x97x\xaa\x7f\xf6\xff\xbb\xbb\x8f\xff+\x82\xf1\x81U891\x00\x00\x00\x00\x00\x00\xf1\x00bcsh8p54  U891\x00\x00\x00\x00\x00\x00SLX2G38NB3\xd1\xc3\xf8\xa8',
+      b'\xf1\x87LBLUFN655162KF36\x98\x88\x88\x88\x98\x88\x88\x88x\x99\xa7\x89x\x99\xa7\x89x\x99\x97\x89g\x7f\xf7\xffwU_\xff\xe9!\xf1\x81U891\x00\x00\x00\x00\x00\x00\xf1\x00bcsh8p54  U891\x00\x00\x00\x00\x00\x00SLX2G38NB3\xd1\xc3\xf8\xa8',
       b'\xf1\x87LDKVBN424201KF26\xba\xaa\x9a\xa9\x99\x99\x89\x98\x89\x99\xa8\x99\x88\x99\x98\x89\x88\x99\xa8\x89v\x7f\xf7\xffwf_\xffq\xa6\xf1\x81U891\x00\x00\x00\x00\x00\x00\xf1\x00bcsh8p54  U891\x00\x00\x00\x00\x00\x00SLX4G38NB2\xafL]\xe7',
       b'\xf1\x87LDLVBN560098KF26\x86fff\x87vgfg\x88\x96xfw\x86gfw\x86g\x95\xf6\xffeU_\xff\x92c\xf1\x81U891\x00\x00\x00\x00\x00\x00\xf1\x00bcsh8p54  U891\x00\x00\x00\x00\x00\x00SLX4G38NB2\xafL]\xe7',
     ],

@@ -41,7 +41,7 @@ const mat3 intrinsic_matrix = (mat3){{
 
 // Projects a point in car to space to the corresponding point in full frame
 // image space.
-bool car_space_to_full_frame(const UIState *s, float in_x, float in_y, float in_z, float *out_x, float *out_y, float margin=0.0) {
+bool car_space_to_full_frame(const UIState *s, float in_x, float in_y, float in_z, vertex_data *out, float margin) {
   const vec4 car_space_projective = (vec4){{in_x, in_y, in_z, 1.}};
   // We'll call the car space point p.
   // First project into normalized image coordinates with the extrinsics matrix.
@@ -52,10 +52,10 @@ bool car_space_to_full_frame(const UIState *s, float in_x, float in_y, float in_
   const vec3 KEp = matvecmul3(intrinsic_matrix, Ep);
 
   // Project.
-  *out_x = KEp.v[0] / KEp.v[2];
-  *out_y = KEp.v[1] / KEp.v[2];
+  out->x = KEp.v[0] / KEp.v[2];
+  out->y = KEp.v[1] / KEp.v[2];
 
-  return *out_x >= -margin && *out_x <= s->fb_w + margin && *out_y >= -margin && *out_y <= s->fb_h + margin;
+  return out->x >= -margin && out->x <= s->fb_w + margin && out->y >= -margin && out->y <= s->fb_h + margin;
 }
 
 
@@ -68,15 +68,11 @@ static void ui_draw_text(NVGcontext *vg, float x, float y, const char* string, f
 
 static void draw_chevron(UIState *s, float x_in, float y_in, float sz,
                           NVGcolor fillColor, NVGcolor glowColor) {
-  float x, y;
-  if (!car_space_to_full_frame(s, x_in, y_in, 0.0, &x, &y)) {
-    return;
-  }
+  vertex_data out;
+  if (!car_space_to_full_frame(s, x_in, y_in, 0.0, &out)) return;
 
-  sz *= 30;
-  sz /= (x_in / 3 + 30);
-  if (sz > 30) sz = 30;
-  if (sz < 15) sz = 15;
+  auto [x, y] = out;
+  sz = std::clamp((sz * 30) / (x_in / 3 + 30), 15.0f, 30.0f);
 
   // glow
   float g_xo = sz/5;
@@ -99,16 +95,17 @@ static void draw_chevron(UIState *s, float x_in, float y_in, float sz,
   nvgFill(s->vg);
 }
 
-static void ui_draw_circle_image(NVGcontext *vg, float x, float y, int size, int image, NVGcolor color, float img_alpha, int img_y = 0) {
+static void ui_draw_circle_image(NVGcontext *vg, int x, int y, int size, int image, NVGcolor color, float img_alpha, int img_y = 0) {
   const int img_size = size * 1.5;
   nvgBeginPath(vg);
   nvgCircle(vg, x, y + (bdr_s * 1.5), size);
   nvgFillColor(vg, color);
   nvgFill(vg);
-  ui_draw_image(vg, x - (img_size / 2), img_y ? img_y : y - (size / 4), img_size, img_size, image, img_alpha);
+  const Rect rect = {x - (img_size / 2), img_y ? img_y : y - (size / 4), img_size, img_size};
+  ui_draw_image(vg, rect, image, img_alpha);
 }
 
-static void ui_draw_circle_image(NVGcontext *vg, float x, float y, int size, int image, bool active) {
+static void ui_draw_circle_image(NVGcontext *vg, int x, int y, int size, int image, bool active) {
   float bg_alpha = active ? 0.3f : 0.1f;
   float img_alpha = active ? 1.0f : 0.15f;
   ui_draw_circle_image(vg, x, y, size, image, nvgRGBA(0, 0, 0, (255 * bg_alpha)), img_alpha);
@@ -148,50 +145,6 @@ static void ui_draw_line(UIState *s, const vertex_data *v, const int cnt, NVGcol
   nvgFill(s->vg);
 }
 
-static void update_track_data(UIState *s, const cereal::ModelDataV2::XYZTData::Reader &line, track_vertices_data *pvd) {
-  const UIScene *scene = &s->scene;
-  const float off = 0.5;
-  int max_idx = 0;
-  float lead_d;
-  if (s->sm->updated("radarState")) {
-    lead_d = scene->lead_data[0].getDRel()*2.;
-  } else {
-    lead_d = MAX_DRAW_DISTANCE;
-  }
-  float path_length = (lead_d>0.)?lead_d-fmin(lead_d*0.35, 10.):MAX_DRAW_DISTANCE;
-  path_length = fmin(path_length, scene->max_distance);
-
-
-  vertex_data *v = &pvd->v[0];
-  const float margin = 500.0f;
-  for (int i = 0; i < TRAJECTORY_SIZE and line.getX()[i] <= path_length; i++) {
-    v += car_space_to_full_frame(s, line.getX()[i], -line.getY()[i] - off, -line.getZ()[i], &v->x, &v->y, margin);
-    max_idx = i;
-  }
-  for (int i = max_idx; i >= 0; i--) {
-    v += car_space_to_full_frame(s, line.getX()[i], -line.getY()[i] + off, -line.getZ()[i], &v->x, &v->y, margin);
-  }
-  pvd->cnt = v - pvd->v;
-}
-
-static void ui_draw_track(UIState *s, track_vertices_data *pvd) {
-  bool is_enabled = s->scene.controls_state.getEnabled();
-  const cereal::ModelDataV2::XYZTData::Reader &pos = s->scene.model.getPosition();
-  if (pos.getY().size() == 0) return;
-
-  NVGpaint track_bg;
-  if (is_enabled) {
-    // Draw colored vision track
-    track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
-                                 nvgRGBA( 4, 106, 56, 255), nvgRGBA( 4, 106, 56, 50));
-  } else {
-    track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
-                                          COLOR_WHITE, COLOR_WHITE_ALPHA(0));
-  }
-
-  ui_draw_line(s, &pvd->v[0], pvd->cnt, nullptr, &track_bg);
-}
-
 static void draw_frame(UIState *s) {
   mat4 *out_mat;
   if (s->scene.frontview) {
@@ -203,12 +156,12 @@ static void draw_frame(UIState *s) {
   }
   glActiveTexture(GL_TEXTURE0);
 
-  if (s->stream.last_idx >= 0) {
-    glBindTexture(GL_TEXTURE_2D, s->frame_texs[s->stream.last_idx]);
+  if (s->last_frame) {
+    glBindTexture(GL_TEXTURE_2D, s->frame_texs[s->last_frame->idx]);
 #ifndef QCOM
     // this is handled in ion on QCOM
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s->stream.bufs_info.width, s->stream.bufs_info.height,
-                 0, GL_RGB, GL_UNSIGNED_BYTE, s->priv_hnds[s->stream.last_idx]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s->last_frame->width, s->last_frame->height,
+                 0, GL_RGB, GL_UNSIGNED_BYTE, s->priv_hnds[s->last_frame->idx]);
 #endif
   }
 
@@ -223,49 +176,24 @@ static void draw_frame(UIState *s) {
   glBindVertexArray(0);
 }
 
-static void update_line_data(UIState *s, const cereal::ModelDataV2::XYZTData::Reader &line, float off, line_vertices_data *pvd, float max_distance) {
-  // TODO check that this doesn't overflow max vertex buffer
-  int max_idx;
-  vertex_data *v = &pvd->v[0];
-  const float margin = 500.0f;
-  for (int i = 0; ((i < TRAJECTORY_SIZE) and (line.getX()[i] < fmax(MIN_DRAW_DISTANCE, max_distance))); i++) {
-    v += car_space_to_full_frame(s, line.getX()[i], -line.getY()[i] - off, -line.getZ()[i] + 1.22, &v->x, &v->y, margin);
-    max_idx = i;
-  }
-  for (int i = max_idx - 1; i > 0; i--) {
-    v += car_space_to_full_frame(s, line.getX()[i], -line.getY()[i] + off, -line.getZ()[i] + 1.22, &v->x, &v->y, margin);
-  }
-  pvd->cnt = v - pvd->v;
-}
-
 static void ui_draw_vision_lane_lines(UIState *s) {
-  const UIScene *scene = &s->scene;
-
+  const UIScene &scene = s->scene;
   // paint lanelines
-  line_vertices_data *pvd_ll = &s->lane_line_vertices[0];
-  for (int ll_idx = 0; ll_idx < 4; ll_idx++) {
-    if (s->sm->updated("modelV2")) {
-      update_line_data(s, scene->model.getLaneLines()[ll_idx], 0.025*scene->model.getLaneLineProbs()[ll_idx], pvd_ll + ll_idx, scene->max_distance);
-    }
-    NVGcolor color = nvgRGBAf(1.0, 1.0, 1.0, scene->lane_line_probs[ll_idx]);
-    ui_draw_line(s, (pvd_ll + ll_idx)->v, (pvd_ll + ll_idx)->cnt, &color, nullptr);
+  for (int i = 0; i < std::size(scene.lane_line_vertices); i++) {
+    NVGcolor color = nvgRGBAf(1.0, 1.0, 1.0, scene.lane_line_probs[i]);
+    ui_draw_line(s, scene.lane_line_vertices[i].v, scene.lane_line_vertices[i].cnt, &color, nullptr);
   }
 
   // paint road edges
-  line_vertices_data *pvd_re = &s->road_edge_vertices[0];
-  for (int re_idx = 0; re_idx < 2; re_idx++) {
-    if (s->sm->updated("modelV2")) {
-      update_line_data(s, scene->model.getRoadEdges()[re_idx], 0.025, pvd_re + re_idx, scene->max_distance);
-    }
-    NVGcolor color = nvgRGBAf(1.0, 0.0, 0.0, std::clamp<float>(1.0-scene->road_edge_stds[re_idx], 0.0, 1.0));
-    ui_draw_line(s, (pvd_re + re_idx)->v, (pvd_re + re_idx)->cnt, &color, nullptr);
+  for (int i = 0; i < std::size(scene.road_edge_vertices); i++) {
+    NVGcolor color = nvgRGBAf(1.0, 0.0, 0.0, std::clamp<float>(1.0 - scene.road_edge_stds[i], 0.0, 1.0));
+    ui_draw_line(s, scene.road_edge_vertices[i].v, scene.road_edge_vertices[i].cnt, &color, nullptr);
   }
 
   // paint path
-  if (s->sm->updated("modelV2")) {
-    update_track_data(s, scene->model.getPosition(), &s->track_vertices);
-  }
-  ui_draw_track(s, &s->track_vertices);
+  NVGpaint track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
+                                        COLOR_WHITE, COLOR_WHITE_ALPHA(0));
+  ui_draw_line(s, scene.track_vertices.v, scene.track_vertices.cnt, nullptr, &track_bg);
 }
 
 // Draw all world space objects.
@@ -303,60 +231,31 @@ static void ui_draw_world(UIState *s) {
 }
 
 static void ui_draw_vision_maxspeed(UIState *s) {
-  char maxspeed_str[32];
   float maxspeed = s->scene.controls_state.getVCruise();
-  int maxspeed_calc = maxspeed * 0.6225 + 0.5;
-  if (s->is_metric) {
-    maxspeed_calc = maxspeed + 0.5;
-  }
+  const bool is_cruise_set = maxspeed != 0 && maxspeed != SET_SPEED_NA;
+  if (is_cruise_set && !s->is_metric) { maxspeed *= 0.6225; }
 
-  bool is_cruise_set = (maxspeed != 0 && maxspeed != SET_SPEED_NA);
+  auto [x, y, w, h] = std::tuple(s->scene.viz_rect.x + (bdr_s * 2), s->scene.viz_rect.y + (bdr_s * 1.5), 184, 202);
 
-  int viz_maxspeed_w = 184;
-  int viz_maxspeed_h = 202;
-  int viz_maxspeed_x = s->scene.viz_rect.x + (bdr_s*2);
-  int viz_maxspeed_y = s->scene.viz_rect.y + (bdr_s*1.5);
-  int viz_maxspeed_xo = 180;
-
-  viz_maxspeed_xo = 0;
-
-  // Draw Background
-  ui_draw_rect(s->vg, viz_maxspeed_x, viz_maxspeed_y, viz_maxspeed_w, viz_maxspeed_h, COLOR_BLACK_ALPHA(100), 30);
-
-  // Draw Border
-  NVGcolor color = COLOR_WHITE_ALPHA(100);
-  ui_draw_rect(s->vg, viz_maxspeed_x, viz_maxspeed_y, viz_maxspeed_w, viz_maxspeed_h, color, 20, 10);
+  ui_draw_rect(s->vg, x, y, w, h, COLOR_BLACK_ALPHA(100), 30);
+  ui_draw_rect(s->vg, x, y, w, h, COLOR_WHITE_ALPHA(100), 20, 10);
 
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
-  const int text_x = viz_maxspeed_x + (viz_maxspeed_xo / 2) + (viz_maxspeed_w / 2);
-  ui_draw_text(s->vg, text_x, 148, "MAX", 26 * 2.5, COLOR_WHITE_ALPHA(is_cruise_set ? 200 : 100), s->font_sans_regular);
-
+  ui_draw_text(s->vg, x + w / 2, 148, "MAX", 26 * 2.5, COLOR_WHITE_ALPHA(is_cruise_set ? 200 : 100), s->font_sans_regular);
   if (is_cruise_set) {
-    snprintf(maxspeed_str, sizeof(maxspeed_str), "%d", maxspeed_calc);
-    ui_draw_text(s->vg, text_x, 242, maxspeed_str, 48 * 2.5, COLOR_WHITE, s->font_sans_bold);
+    const std::string maxspeed_str = std::to_string((int)std::nearbyint(maxspeed));
+    ui_draw_text(s->vg, x + w / 2, 242, maxspeed_str.c_str(), 48 * 2.5, COLOR_WHITE, s->font_sans_bold);
   } else {
-    ui_draw_text(s->vg, text_x, 242, "N/A", 42 * 2.5, COLOR_WHITE_ALPHA(100), s->font_sans_semibold);
+    ui_draw_text(s->vg, x + w / 2, 242, "N/A", 42 * 2.5, COLOR_WHITE_ALPHA(100), s->font_sans_semibold);
   }
 }
 
 static void ui_draw_vision_speed(UIState *s) {
-  const Rect &viz_rect = s->scene.viz_rect;
-  float v_ego = s->scene.controls_state.getVEgo();
-  float speed = v_ego * 2.2369363 + 0.5;
-  if (s->is_metric){
-    speed = v_ego * 3.6 + 0.5;
-  }
-  const int viz_speed_w = 280;
-  const int viz_speed_x = viz_rect.centerX() - viz_speed_w/2;
-  char speed_str[32];
-
-  nvgBeginPath(s->vg);
-  nvgRect(s->vg, viz_speed_x, viz_rect.y, viz_speed_w, header_h);
+  const float speed = std::max(0.0, s->scene.controls_state.getVEgo() * (s->is_metric ? 3.6 : 2.2369363));
+  const std::string speed_str = std::to_string((int)std::nearbyint(speed));
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
-
-  snprintf(speed_str, sizeof(speed_str), "%d", (int)speed);
-  ui_draw_text(s->vg, viz_rect.centerX(), 240, speed_str, 96*2.5, COLOR_WHITE, s->font_sans_bold);
-  ui_draw_text(s->vg, viz_rect.centerX(), 320, s->is_metric?"km/h":"mph", 36*2.5, COLOR_WHITE_ALPHA(200), s->font_sans_regular);
+  ui_draw_text(s->vg, s->scene.viz_rect.centerX(), 240, speed_str.c_str(), 96 * 2.5, COLOR_WHITE, s->font_sans_bold);
+  ui_draw_text(s->vg, s->scene.viz_rect.centerX(), 320, s->is_metric ? "km/h" : "mph", 36 * 2.5, COLOR_WHITE_ALPHA(200), s->font_sans_regular);
 }
 
 static void ui_draw_vision_event(UIState *s) {
@@ -366,7 +265,8 @@ static void ui_draw_vision_event(UIState *s) {
   if (s->scene.controls_state.getDecelForModel() && s->scene.controls_state.getEnabled()) {
     // draw winding road sign
     const int img_turn_size = 160*1.5;
-    ui_draw_image(s->vg, viz_event_x - (img_turn_size / 4), viz_event_y + bdr_s - 25, img_turn_size, img_turn_size, s->img_turn, 1.0f);
+    const Rect rect = {viz_event_x - (img_turn_size / 4), viz_event_y + bdr_s - 25, img_turn_size, img_turn_size};
+    ui_draw_image(s->vg, rect, s->img_turn, 1.0f);
   } else if (s->scene.controls_state.getEngageable()) {
     // draw steering wheel
     const int bg_wheel_size = 96;
@@ -387,7 +287,7 @@ static void ui_draw_vision_face(UIState *s) {
 
 static void ui_draw_driver_view(UIState *s) {
   const UIScene *scene = &s->scene;
-  s->scene.uilayout_sidebarcollapsed = true;
+  s->scene.sidebar_collapsed = true;
   const Rect &viz_rect = s->scene.viz_rect;
   const int ff_xoffset = 32;
   const int frame_x = viz_rect.x;
@@ -415,7 +315,7 @@ static void ui_draw_driver_view(UIState *s) {
     const float face_x = fxy_list[0];
     const float face_y = fxy_list[1];
     float fbox_x;
-    float fbox_y = box_y + (face_y + 0.5) * box_h - 0.5 * 0.6 * box_h / 2;;
+    float fbox_y = box_y + (face_y + 0.5) * box_h - 0.5 * 0.6 * box_h / 2;
     if (!scene->is_rhd) {
       fbox_x = valid_frame_x + (1 - (face_x + 0.5)) * (box_h / 2) - 0.5 * 0.6 * box_h / 2;
     } else {
@@ -458,7 +358,6 @@ static void ui_draw_vision_footer(UIState *s) {
 
 static void ui_draw_vision_alert(UIState *s) {
   static std::map<cereal::ControlsState::AlertSize, const int> alert_size_map = {
-      {cereal::ControlsState::AlertSize::NONE, 0},
       {cereal::ControlsState::AlertSize::SMALL, 241},
       {cereal::ControlsState::AlertSize::MID, 390},
       {cereal::ControlsState::AlertSize::FULL, s->fb_h}};
@@ -470,9 +369,9 @@ static void ui_draw_vision_alert(UIState *s) {
   int alr_s = alert_size_map[scene->alert_size];
 
   const int alr_x = scene->viz_rect.x - bdr_s;
-  const int alr_w = scene->viz_rect.w + (bdr_s*2);
-  const int alr_h = alr_s+(scene->alert_size==cereal::ControlsState::AlertSize::NONE?0:bdr_s);
-  const int alr_y = s->fb_h-alr_h;
+  const int alr_w = scene->viz_rect.w + (bdr_s * 2);
+  const int alr_h = alr_s + bdr_s;
+  const int alr_y = s->fb_h - alr_h;
 
   ui_draw_rect(s->vg, alr_x, alr_y, alr_w, alr_h, color);
 
@@ -539,17 +438,17 @@ static void ui_draw_background(UIState *s) {
 
 void ui_draw(UIState *s) {
   s->scene.viz_rect = Rect{bdr_s, bdr_s, s->fb_w - 2 * bdr_s, s->fb_h - 2 * bdr_s};
-  if (!s->scene.uilayout_sidebarcollapsed) {
+  if (!s->scene.sidebar_collapsed) {
     s->scene.viz_rect.x += sbr_w;
     s->scene.viz_rect.w -= sbr_w;
   }
 
   const bool draw_vision = s->started && s->status != STATUS_OFFROAD &&
-                           s->active_app == cereal::UiLayoutState::App::NONE;
+    s->active_app == cereal::UiLayoutState::App::NONE && s->vipc_client->connected;
 
   // GL drawing functions
   ui_draw_background(s);
-  if (draw_vision && s->vision_connected) {
+  if (draw_vision) {
     ui_draw_vision_frame(s);
   }
   glEnable(GL_BLEND);
@@ -559,7 +458,7 @@ void ui_draw(UIState *s) {
   // NVG drawing functions - should be no GL inside NVG frame
   nvgBeginFrame(s->vg, s->fb_w, s->fb_h, 1.0f);
   ui_draw_sidebar(s);
-  if (draw_vision && s->vision_connected) {
+  if (draw_vision) {
     ui_draw_vision(s);
   }
 
@@ -570,10 +469,10 @@ void ui_draw(UIState *s) {
   glDisable(GL_BLEND);
 }
 
-void ui_draw_image(NVGcontext *vg, float x, float y, float w, float h, int image, float alpha){
+void ui_draw_image(NVGcontext *vg, const Rect &r, int image, float alpha){
   nvgBeginPath(vg);
-  NVGpaint imgPaint = nvgImagePattern(vg, x, y, w, h, 0, image, alpha);
-  nvgRect(vg, x, y, w, h);
+  NVGpaint imgPaint = nvgImagePattern(vg, r.x, r.y, r.w, r.h, 0, image, alpha);
+  nvgRect(vg, r.x, r.y, r.w, r.h);
   nvgFillPaint(vg, imgPaint);
   nvgFill(vg);
 }

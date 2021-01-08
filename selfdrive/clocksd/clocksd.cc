@@ -1,20 +1,25 @@
-#include <chrono>
-#include <thread>
-
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 
-#include <cassert>
-#include "messaging.hpp"
-#include "common/timing.h"
-
 // Apple doesn't have timerfd
-#ifndef __APPLE__
+#ifdef __APPLE__
+#include <thread>
+#else
 #include <sys/timerfd.h>
 #endif
+
+#include <cassert>
+#include <chrono>
+
+#include "messaging.hpp"
+#include "common/timing.h"
+#include "common/util.h"
+#include "common/utilpp.h"
+
+ExitHandler do_exit;
 
 #ifdef QCOM
 namespace {
@@ -28,7 +33,6 @@ namespace {
 
 int main() {
   setpriority(PRIO_PROCESS, 0, -13);
-
   PubMaster pm({"clocks"});
 
 #ifndef __APPLE__
@@ -45,11 +49,11 @@ int main() {
   assert(err == 0);
 
   uint64_t expirations = 0;
-  while ((err = read(timerfd, &expirations, sizeof(expirations)))) {
+  while (!do_exit && (err = read(timerfd, &expirations, sizeof(expirations)))) {
     if (err < 0) break;
 #else
   // Just run at 1Hz on apple
-  while (true){
+  while (!do_exit){
     std::this_thread::sleep_for(std::chrono::seconds(1));
 #endif
 
