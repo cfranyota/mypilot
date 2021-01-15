@@ -469,7 +469,7 @@ class Controls:
 
     if not self.read_only:
       # send car controls over can
-      can_sends = self.CI.apply(CC)
+      can_sends = self.CI.apply(CC, a_acc)
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
 
     force_decel = (self.sm['driverMonitoringState'].awarenessStatus < 0.) or \
