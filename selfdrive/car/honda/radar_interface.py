@@ -46,16 +46,6 @@ OBJECT_MIN_PROBABILITY = 50.
 CLASS_MIN_PROBABILITY = 50.
 RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9  # time in ns, radar sends data at 0.06 s
 VALID_MESSAGE_COUNT_THRESHOLD = 4
-# these are settings for Auto High Beam
-# they are use to detect objects that are moving either in the same direction with us or towards us
-# for AHB radar is forced in low speed mode that widents the angle and reduces distance
-# in these cases at night we will rely on visual radar to detect the lead car
-# AHB_VALID_MESSAGE_COUNT_THRESHOLD = 4  # -1 to use any point
-# AHB_OBJECT_MIN_PROBABILITY = 20.  # 0. to use any point
-# AHB_CLASS_MIN_PROBABILITY = 10.  # 0. to use any point
-# AHB_STATIONARY_MARGIN = 1.8  # m/s
-# AHB_DEBUG = False
-# AHB_MAX_DISTANCE = 100  # ignore if more than 100m
 
 
 def _create_tesla_can_parser(car_fingerprint):
@@ -89,13 +79,9 @@ class RadarInterface(RadarInterfaceBase):
     params = Params()
     use_tesla = params.get("TeslaRadarActivate")
     self.pts = {}
-    # self.extPts = {}
     self.delay = 0
-    self.TRACK_LEFT_LANE = False
-    self.TRACK_RIGHT_LANE = False
     self.updated_messages = set()
     self.canErrorCounter = 0
-    # self.AHB_car_detected = False
     self.track_id = 0
     self.radar_fault = False
     self.radar_wrong_config = False
@@ -106,7 +92,6 @@ class RadarInterface(RadarInterfaceBase):
     elif not self.radar_off_can:
       if use_tesla:
         self.pts = {}
-        # self.extPts = {}
         self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
         self.rcp = _create_tesla_can_parser(CP.carFingerprint)
         self.radarOffset = float(params.get("TeslaRadarOffset"))
@@ -124,7 +109,6 @@ class RadarInterface(RadarInterfaceBase):
   def update(self, can_strings):
     # radard at 20Hz and return no points
     if self.radar_off_can:
-      # return car.RadarData.new_message(), self.extPts.values(), self.AHB_car_detected
       return car.RadarData.new_message()
 
     if can_strings is not None:
@@ -132,30 +116,22 @@ class RadarInterface(RadarInterfaceBase):
       self.updated_messages.update(vls)
 
     if self.trigger_start_msg not in self.updated_messages:
-      # return None, None, self.AHB_car_detected
       return None
 
     if self.trigger_end_msg not in self.updated_messages:
-      # return None, None, self.AHB_car_detected
       return None
 
-    # rr, rrext, self.AHB_car_detected = self._update(self.updated_messages, v_ego)
     rr = self._update(self.updated_messages)
     self.updated_messages.clear()
-    # return rr, rrext, self.AHB_car_detected
     return rr
 
 
-
-  # def _update(self, updated_messages, v_ego):
   def _update(self, updated_messages):
     ret = car.RadarData.new_message()
-    # AHB_car_detected = False
     for message in updated_messages:
       if not(message in RADAR_A_MSGS):
         if message in self.pts:
           del self.pts[message]
-          # del self.extPts[message]
         continue
       cpt = self.rcp.vl[message]
       if not (message + 1 in updated_messages):
@@ -168,42 +144,28 @@ class RadarInterface(RadarInterfaceBase):
       if CALIBRATION:
         if (cpt['LongDist'] >= MINX) and (cpt['LongDist'] <= MAXX) and (cpt['LatDist'] >= MINY) and (cpt['LatDist'] <= MAXY):
           print(cpt['LongDist'], end=" "), print(cpt['LatDist'], end=" "), print(cpt['ProbExist'])
+          
       if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist'] == 0) or (not cpt['Tracked']) or (not cpt['Valid']):
         self.valid_cnt[message] = 0    # reset counter
         if message in self.pts:
           del self.pts[message]
-          # del self.extPts[message]
       elif cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
         self.valid_cnt[message] += 1
       else:
         self.valid_cnt[message] = max(self.valid_cnt[message] - 20, 0)
         if (self.valid_cnt[message] == 0) and (message in self.pts):
           del self.pts[message]
-          # del self.extPts[message]
 
-      # this is the logic used for Auto High Beam (AHB) car detection
-      # if (cpt['Valid'] or cpt['Tracked']) and (abs(cpt['LongSpeed']) < 80) and (cpt['LongDist']>0) and (cpt['LongDist'] < AHB_MAX_DISTANCE) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
-      #    (self.valid_cnt[message] > AHB_VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= AHB_OBJECT_MIN_PROBABILITY) and \
-      #    (cpt2['Class'] < 4) and (cpt2['ProbClass'] >= AHB_CLASS_MIN_PROBABILITY):
-      #    # if moving or the relative speed is x% larger than our speed then use to turn high beam off
-      #    if ((cpt['LongSpeed'] <= - AHB_STATIONARY_MARGIN - v_ego) or (cpt['LongSpeed'] >= AHB_STATIONARY_MARGIN - v_ego)):
-      #     AHB_car_detected = True
-      #     if AHB_DEBUG:
-      #         print(cpt, cpt2)
       # radar point only valid if it's a valid measurement and score is above 50
       # bosch radar data needs to match Index and Index2 for validity
       # also for now ignore construction elements
-      # if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
-      #     (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and \
-      #     (cpt2['Class'] < 4) and ((cpt['LongSpeed'] >= AHB_STATIONARY_MARGIN - v_ego) or (v_ego < 2)):
       if (cpt['Valid'] or cpt['Tracked']) and (cpt['LongDist'] > 0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
           (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and \
           (cpt2['Class'] < 4):
         if message not in self.pts and (cpt['Tracked']):
           self.pts[message] = car.RadarData.RadarPoint.new_message()
           self.pts[message].trackId = self.trackId
-          # self.extPts[message] = tesla.TeslaRadarPoint.new_message()
-          # self.extPts[message].trackId = self.trackId
+
           self.trackId = (self.trackId + 1) & 0xFFFFFFFFFFFFFFFF
           if self.trackId == 0:
             self.trackId = 1
@@ -215,23 +177,6 @@ class RadarInterface(RadarInterfaceBase):
           self.pts[message].yvRel = cpt2['LatSpeed']
           self.pts[message].measured = bool(cpt['Meas'])
 
-          # self.extPts[message].dz = cpt2['dZ']
-          # self.extPts[message].movingState = cpt2['MovingState']
-          # self.extPts[message].length = cpt2['Length']
-          # self.extPts[message].obstacleProb = cpt['ProbObstacle']
-          # self.extPts[message].timeStamp = int(self.rcp.ts[message+1]['Index2'])
-          # if cpt2['ProbClass'] >= CLASS_MIN_PROBABILITY:
-          #   self.extPts[message].objectClass = cpt2['Class']
-          #   # for now we will use class 0- unknown stuff to show trucks
-          #   # we will base that on being a class 1 and length of 2 (hoping they meant width not length, but as germans could not decide)
-          #   # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element
-          #   # going to 0-unknown 1-truck 2-car 3/4-motorcycle/bicycle 5 pedestrian - we have two bits so
-          #   if cpt2['Class'] == 0:
-          #     self.extPts[message].objectClass = 1
-          #   if (cpt2['Class'] == 1) and ((self.extPts[message].length >= 1.8) or (.6 < self.extPts[message].dz < 4.5)):
-          #     self.extPts[message].objectClass = 0
-          # else:
-          #   self.extPts[message].objectClass = 1
 
     ret.points = list(self.pts.values())
     errors = []
@@ -245,12 +190,12 @@ class RadarInterface(RadarInterfaceBase):
       ret.errors = errors
     else:
       ret.errors = []
-    # return ret,self.extPts.values(),AHB_car_detected
     return ret
 
 
 # radar_interface standalone tester
 if __name__ == "__main__":
+  ## TODO: fix this. CP of None doesn't work
   CP = None
   RI = RadarInterface(CP)
   while 1:
