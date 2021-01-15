@@ -599,9 +599,9 @@ class CarInterface(CarInterfaceBase):
                                pcm_accel,
                                hud_v_cruise,
                                c.hudControl.lanesVisible,
-                               a_acc,
                                hud_show_car=c.hudControl.leadVisible,
-                               hud_alert=c.hudControl.visualAlert)
+                               hud_alert=c.hudControl.visualAlert,
+                               a_acc)
 
     self.frame += 1
     return can_sends
