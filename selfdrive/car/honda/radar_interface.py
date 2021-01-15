@@ -32,7 +32,7 @@ BOSCH_MAX_DIST = 250.  # max distance for radar
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
 # definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
-USE_ALL_OBJECTS = True
+USE_ALL_OBJECTS = False
 if not USE_ALL_OBJECTS:
   # use these for tracks (5 tracks)
   RADAR_A_MSGS = list(range(0x371, 0x37F, 3))
