@@ -21,7 +21,7 @@ ALT_BRAKE_FLAG = 1
 BOSCH_LONG_FLAG = 2
 
 def compute_gb_honda_bosch(accel, speed):
-  return float(accel) / 4.0
+  return float(accel) / 5.0
 
 def compute_gb_honda_nidec(accel, speed):
   creep_brake = 0.0
