@@ -6,7 +6,6 @@ CAMERA_OFFSET = 0.06  # m from center car to camera
 TRAJECTORY_SIZE = 33
 
 
-
 class LanePlanner:
   def __init__(self):
     self.ll_t = np.zeros((TRAJECTORY_SIZE,))

@@ -1,7 +1,7 @@
 from cereal import car
 from selfdrive.car import apply_std_steer_torque_limits
 from selfdrive.car.volkswagen import volkswagencan
-from selfdrive.car.volkswagen.values import DBC, CANBUS, MQB_LDW_MESSAGES, BUTTON_STATES, CarControllerParams
+from selfdrive.car.volkswagen.values import DBC, CANBUS, NWL, MQB_LDW_MESSAGES, BUTTON_STATES, CarControllerParams
 from opendbc.can.packer import CANPacker
 
 
@@ -10,6 +10,18 @@ class CarController():
     self.apply_steer_last = 0
 
     self.packer_pt = CANPacker(DBC[CP.carFingerprint]['pt'])
+    self.acc_bus = CANBUS.pt if CP.networkLocation == NWL.fwdCamera else CANBUS.cam
+
+    if CP.safetyModel == car.CarParams.SafetyModel.volkswagen:
+      self.create_steering_control = volkswagencan.create_mqb_steering_control
+      self.create_acc_buttons_control = volkswagencan.create_mqb_acc_buttons_control
+      self.create_hud_control = volkswagencan.create_mqb_hud_control
+      self.ldw_step = CarControllerParams.MQB_LDW_STEP
+    elif CP.safetyModel == car.CarParams.SafetyModel.volkswagenPq:
+      self.create_steering_control = volkswagencan.create_pq_steering_control
+      self.create_acc_buttons_control = volkswagencan.create_pq_acc_buttons_control
+      self.create_hud_control = volkswagencan.create_pq_hud_control
+      self.ldw_step = CarControllerParams.PQ_LDW_STEP
 
     self.hcaSameTorqueCount = 0
     self.hcaEnabledFrameCount = 0
@@ -17,6 +29,12 @@ class CarController():
     self.graMsgSentCount = 0
     self.graMsgStartFramePrev = 0
     self.graMsgBusCounterPrev = 0
+    self.create_awv_control = volkswagencan.create_pq_awv_control
+
+    self.mobPreEnable = False
+    self.mobEnabled = False
+    self.ACCSlowDown = False
+    self.ACCSpeedUp = False
 
     self.steer_rate_limited = False
 
@@ -27,7 +45,21 @@ class CarController():
 
     # Send CAN commands.
     can_sends = []
+    
+    # --------------------------------------------------------------------------
+    #                                                                         #
+    # acc led stuff                                                           #
+    #                                                                         #
+    #                                                                         #
+    # --------------------------------------------------------------------------
+    if frame % P.AWV_STEP == 0:
+      green_led = 1 if enabled else 0
+      orange_led = 1 if not enabled else 0
 
+      idx = (frame / P.MOB_STEP) % 16
+
+      can_sends.append(
+        self.create_awv_control(self.packer_pt, CANBUS.pt, idx, orange_led, green_led))
     #--------------------------------------------------------------------------
     #                                                                         #
     # Prepare HCA_01 Heading Control Assist messages with steering torque.    #
@@ -52,6 +84,10 @@ class CarController():
         new_steer = int(round(actuators.steer * P.STEER_MAX))
         apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, P)
         self.steer_rate_limited = new_steer != apply_steer
+        
+        #STUFF FOR PQTIMEBOMB BYPASS
+        if CS.out.stopSteering:
+          apply_steer = 0
 
         # FAULT AVOIDANCE: HCA must not be enabled for >360 seconds. Sending
         # a single frame with HCA disabled is an effective workaround.
@@ -96,7 +132,7 @@ class CarController():
 
       self.apply_steer_last = apply_steer
       idx = (frame / P.HCA_STEP) % 16
-      can_sends.append(volkswagencan.create_mqb_steering_control(self.packer_pt, CANBUS.pt, apply_steer,
+      can_sends.append(self.create_steering_control(self.packer_pt, CANBUS.pt, apply_steer,
                                                                  idx, hcaEnabled))
 
     #--------------------------------------------------------------------------
@@ -109,7 +145,7 @@ class CarController():
     # The factory camera emits this message at 10Hz. When OP is active, Panda
     # filters LDW_02 from the factory camera and OP emits LDW_02 at 10Hz.
 
-    if frame % P.LDW_STEP == 0:
+    if frame % self.ldw_step == 0:
       hcaEnabled = True if enabled and not CS.out.standstill else False
 
       if visual_alert == car.CarControl.HUDControl.VisualAlert.steerRequired:
@@ -117,9 +153,11 @@ class CarController():
       else:
         hud_alert = MQB_LDW_MESSAGES["none"]
 
-      can_sends.append(volkswagencan.create_mqb_hud_control(self.packer_pt, CANBUS.pt, hcaEnabled,
+      can_sends.append(self.create_hud_control(self.packer_pt, CANBUS.pt, hcaEnabled,
                                                             CS.out.steeringPressed, hud_alert, leftLaneVisible,
-                                                            rightLaneVisible))
+                                                            rightLaneVisible, CS.ldw_lane_warning_left,
+                                                            CS.ldw_lane_warning_right, CS.ldw_side_dlc_tlc,
+                                                            CS.ldw_dlc, CS.ldw_tlc))
 
     #--------------------------------------------------------------------------
     #                                                                         #
@@ -176,7 +214,7 @@ class CarController():
         if self.graMsgSentCount == 0:
           self.graMsgStartFramePrev = frame
         idx = (CS.graMsgBusCounter + 1) % 16
-        can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, CANBUS.pt, self.graButtonStatesToSend, CS, idx))
+        can_sends.append(self.create_acc_buttons_control(self.packer_pt, self.acc_bus, self.graButtonStatesToSend, CS, idx))
         self.graMsgSentCount += 1
         if self.graMsgSentCount >= P.GRA_VBP_COUNT:
           self.graButtonStatesToSend = None
