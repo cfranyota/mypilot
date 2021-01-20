@@ -574,7 +574,6 @@ void OmxEncoder::encoder_close() {
       avformat_free_context(this->ofmt_ctx);
     } else {
       fclose(this->of);
-      this->of = nullptr;
     }
     unlink(this->lock_path);
   }

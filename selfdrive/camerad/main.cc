@@ -34,6 +34,11 @@ void party(cl_device_id device_id, cl_context context) {
 
   vipc_server.start_listener();
 
+  // priority for cameras
+  int err = set_realtime_priority(53);
+  LOG("setpriority returns %d", err);
+
+
   cameras_run(&cameras);
 }
 
