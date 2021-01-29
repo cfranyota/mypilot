@@ -550,7 +550,7 @@ def main():
     # TODO: get the vin and config automagically on the first start. this is hardcoded to my radar. will be different for you!
     ("TeslaRadarVin", "5YJSA1H24EFP54660"),
     # offset of the radar location on the front of the car. measured in meters. positive is to the right tire. value is for 2017 Civic Hatchback
-    ("TeslaRadarOffset", "-0.58"),
+    ("TeslaRadarOffset", "0.57"),
     # between 0 and 3. trial and error.
     ("TeslaRadarPosition", "0"),
     # between 0 and 4. trial and error.
