@@ -32,7 +32,8 @@ BOSCH_MAX_DIST = 250.  # max distance for radar
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
 # definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
-USE_ALL_OBJECTS = False
+# 'L' tracks can drop out at distances lower than 6 meters leaving us with no lead data. Need to use all points and maybe filter out extraneous points
+USE_ALL_OBJECTS = True
 if not USE_ALL_OBJECTS:
   # use these for tracks (5 tracks)
   RADAR_A_MSGS = list(range(0x371, 0x37F, 3))
@@ -144,7 +145,7 @@ class RadarInterface(RadarInterfaceBase):
       if CALIBRATION:
         if (cpt['LongDist'] >= MINX) and (cpt['LongDist'] <= MAXX) and (cpt['LatDist'] >= MINY) and (cpt['LatDist'] <= MAXY):
           print(cpt['LongDist'], end=" "), print(cpt['LatDist'], end=" "), print(cpt['ProbExist'])
-          
+
       if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist'] == 0) or (not cpt['Tracked']) or (not cpt['Valid']):
         self.valid_cnt[message] = 0    # reset counter
         if message in self.pts:
