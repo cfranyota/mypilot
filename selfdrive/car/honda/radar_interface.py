@@ -47,6 +47,7 @@ OBJECT_MIN_PROBABILITY = 50.
 CLASS_MIN_PROBABILITY = 50.
 RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9  # time in ns, radar sends data at 0.06 s
 VALID_MESSAGE_COUNT_THRESHOLD = 4
+Y_MAX = 3.5 # max yRel in each Direction
 
 
 def _create_tesla_can_parser(car_fingerprint):
@@ -162,7 +163,8 @@ class RadarInterface(RadarInterfaceBase):
       # also for now ignore construction elements
       if (cpt['Valid'] or cpt['Tracked']) and (cpt['LongDist'] > 0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
           (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and \
-          (cpt2['Class'] < 4):
+          (cpt2['Class'] < 4) and \
+          (-Y_MAX < (cpt['LatDist'] - self.radarOffset) < Y_MAX):
         if message not in self.pts and (cpt['Tracked']):
           self.pts[message] = car.RadarData.RadarPoint.new_message()
           self.pts[message].trackId = self.trackId
