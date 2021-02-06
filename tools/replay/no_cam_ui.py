@@ -50,19 +50,19 @@ def ui_thread(addr, frame_address):
 
   if hor_mode:
     size = (1920, 720)
-    write_x = 1920
-    write_y = 720
+    write_x = 25
+    write_y = 325
   else:
     size = (640+384, 960+300)
     write_x = 645
     write_y = 970
 
-  pygame.display.set_caption("openpilot debug UI")
+  pygame.display.set_caption("radar debug UI")
   screen = pygame.display.set_mode(size, pygame.DOUBLEBUF)
 
-  alert1_font = pygame.font.SysFont("arial", 30)
-  alert2_font = pygame.font.SysFont("arial", 20)
-  info_font = pygame.font.SysFont("arial", 15)
+  alert1_font = pygame.font.SysFont("arial", 40)
+  alert2_font = pygame.font.SysFont("arial", 30)
+  info_font = pygame.font.SysFont("arial", 25)
 
   camera_surface = None
   cameraw_surface = None
@@ -120,38 +120,41 @@ def ui_thread(addr, frame_address):
   while 1:
     list(pygame.event.get())
 
-    screen.fill((0, 0, 0))
+    screen.fill((50, 50, 50))
     lid_overlay = lid_overlay_blank.copy()
     top_down = top_down_surface, lid_overlay
+    img.fill(25)
+    intrinsic_matrix = np.eye(3)
+    imgw.fill(25)
 
     # ***** frame *****
-    fpkt = messaging.recv_one(frame)
-    rgb_img_raw = fpkt.frame.image
+    # fpkt = messaging.recv_one(frame)
+    # rgb_img_raw = fpkt.frame.image
 
-    num_px = len(rgb_img_raw) // 3
-    if rgb_img_raw and num_px in _FULL_FRAME_SIZE.keys():
-      FULL_FRAME_SIZE = _FULL_FRAME_SIZE[num_px]
-
-      imgff_shape = (FULL_FRAME_SIZE[1], FULL_FRAME_SIZE[0], 3)
-
-      if imgff is None or imgff.shape != imgff_shape:
-        imgff = np.zeros(imgff_shape, dtype=np.uint8)
-
-      imgff = np.frombuffer(rgb_img_raw, dtype=np.uint8).reshape((FULL_FRAME_SIZE[1], FULL_FRAME_SIZE[0], 3))
-      imgff = imgff[:, :, ::-1]  # Convert BGR to RGB
-      cv2.warpAffine(imgff, np.dot(img_transform, _BB_TO_FULL_FRAME[num_px])[:2],
-                     (img.shape[1], img.shape[0]), dst=img, flags=cv2.WARP_INVERSE_MAP)
-
-      intrinsic_matrix = _INTRINSICS[num_px]
-    else:
-      img.fill(0)
-      intrinsic_matrix = np.eye(3)
-
-    if calibration is not None and imgff is not None:
-      transform = np.dot(img_transform, calibration.model_to_full_frame)
-      imgw = cv2.warpAffine(imgff, transform[:2], (MODEL_INPUT_SIZE[0], MODEL_INPUT_SIZE[1]), flags=cv2.WARP_INVERSE_MAP)
-    else:
-      imgw.fill(0)
+    # num_px = len(rgb_img_raw) // 3
+    # if rgb_img_raw and num_px in _FULL_FRAME_SIZE.keys():
+    #   FULL_FRAME_SIZE = _FULL_FRAME_SIZE[num_px]
+    #
+    #   imgff_shape = (FULL_FRAME_SIZE[1], FULL_FRAME_SIZE[0], 3)
+    #
+    #   if imgff is None or imgff.shape != imgff_shape:
+    #     imgff = np.zeros(imgff_shape, dtype=np.uint8)
+    #
+    #   imgff = np.frombuffer(rgb_img_raw, dtype=np.uint8).reshape((FULL_FRAME_SIZE[1], FULL_FRAME_SIZE[0], 3))
+    #   imgff = imgff[:, :, ::-1]  # Convert BGR to RGB
+    #   cv2.warpAffine(imgff, np.dot(img_transform, _BB_TO_FULL_FRAME[num_px])[:2],
+    #                  (img.shape[1], img.shape[0]), dst=img, flags=cv2.WARP_INVERSE_MAP)
+    #
+    #   intrinsic_matrix = _INTRINSICS[num_px]
+    # else:
+    #   img.fill(0)
+    #   intrinsic_matrix = np.eye(3)
+    #
+    # if calibration is not None and imgff is not None:
+    #   transform = np.dot(img_transform, calibration.model_to_full_frame)
+    #   imgw = cv2.warpAffine(imgff, transform[:2], (MODEL_INPUT_SIZE[0], MODEL_INPUT_SIZE[1]), flags=cv2.WARP_INVERSE_MAP)
+    # else:
+    #   imgw.fill(0)
 
     sm.update()
 
@@ -212,25 +215,25 @@ def ui_thread(addr, frame_address):
     # display alerts
     alert_line1 = alert1_font.render(sm['controlsState'].alertText1, True, (255, 0, 0))
     alert_line2 = alert2_font.render(sm['controlsState'].alertText2, True, (255, 0, 0))
-    screen.blit(alert_line1, (180, 150))
-    screen.blit(alert_line2, (180, 190))
+    screen.blit(alert_line1, (25, 150))
+    screen.blit(alert_line2, (25, 190))
 
     if calibration is not None and img is not None:
       cpw = warp_points(CalP, calibration.model_to_bb)
       vanishing_pointw = warp_points(vanishing_point, calibration.model_to_bb)
-      pygame.draw.polygon(screen, BLUE, tuple(map(tuple, cpw)), 1)
-      pygame.draw.circle(screen, BLUE, list(map(int, map(round, vanishing_pointw[0]))), 2)
+      # pygame.draw.polygon(screen, BLUE, tuple(map(tuple, cpw)), 1)
+      # pygame.draw.circle(screen, BLUE, list(map(int, map(round, vanishing_pointw[0]))), 2)
 
     if hor_mode:
-      screen.blit(draw_plots(plot_arr), (640+384, 0))
+      screen.blit(draw_plots(plot_arr), (abs(640 - size[0]), 0))
     else:
       screen.blit(draw_plots(plot_arr), (0, 600))
 
 
     pygame.surfarray.blit_array(*top_down)
-    screen.blit(top_down[0], (640, -200))
+    screen.blit(top_down[0], (900, -150))
 
-    SPACING = 25
+    SPACING = 35
 
     lines = [
       info_font.render("ENABLED", True, GREEN if sm['controlsState'].enabled else BLACK),
