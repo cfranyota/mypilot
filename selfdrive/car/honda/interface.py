@@ -2,6 +2,7 @@
 import numpy as np
 from cereal import car
 from common.numpy_fast import clip, interp
+from common.params import Params
 from common.realtime import DT_CTRL
 from selfdrive.swaglog import cloudlog
 from selfdrive.config import Conversions as CV
@@ -17,7 +18,13 @@ ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 
 
-def compute_gb_honda(accel, speed):
+ALT_BRAKE_FLAG = 1
+BOSCH_LONG_FLAG = 2
+
+def compute_gb_honda_bosch(accel, speed):
+  return float(accel) / 4.8
+
+def compute_gb_honda_nidec(accel, speed):
   creep_brake = 0.0
   creep_speed = 2.3
   creep_brake_value = 0.15
@@ -80,8 +87,10 @@ class CarInterface(CarInterfaceBase):
 
     if self.CS.CP.carFingerprint == CAR.ACURA_ILX:
       self.compute_gb = get_compute_gb_acura()
+    elif self.CS.CP.carFingerprint in HONDA_BOSCH:
+      self.compute_gb = compute_gb_honda_bosch
     else:
-      self.compute_gb = compute_gb_honda
+      self.compute_gb = compute_gb_honda_nidec
 
   @staticmethod
   def compute_gb(accel, speed): # pylint: disable=method-hidden
@@ -121,25 +130,30 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=[]):  # pylint: disable=dangerous-default-value
+    params = Params()
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "honda"
+    ret.safetyParam = 0
 
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModel.hondaBoschHarness
       ret.enableCamera = True
       ret.radarOffCan = True
-      ret.openpilotLongitudinalControl = False
+      ret.openpilotLongitudinalControl = True
+      ret.enableCruise = not ret.openpilotLongitudinalControl
+      ret.communityFeature = ret.openpilotLongitudinalControl
+      if ret.openpilotLongitudinalControl:
+        ret.safetyParam |= BOSCH_LONG_FLAG
     else:
       ret.safetyModel = car.CarParams.SafetyModel.hondaNidec
       ret.enableCamera = True
       ret.enableGasInterceptor = 0x201 in fingerprint[0]
       ret.openpilotLongitudinalControl = ret.enableCamera
+      ret.enableCruise = not ret.enableGasInterceptor
+      ret.communityFeature = ret.enableGasInterceptor
 
     cloudlog.warning("ECU Camera Simulated: %r", ret.enableCamera)
     cloudlog.warning("ECU Gas Interceptor: %r", ret.enableGasInterceptor)
-
-    ret.enableCruise = not ret.enableGasInterceptor
-    ret.communityFeature = ret.enableGasInterceptor
 
     # Certain Hondas have an extra steering sensor at the bottom of the steering rack,
     # which improves controls quality as it removes the steering column torsion from feedback.
@@ -180,14 +194,15 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiV = [0.54, 0.36]
 
     elif candidate in (CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL):
+      # vaggy
       stop_and_go = True
       ret.mass = CivicParams.MASS
       ret.wheelbase = CivicParams.WHEELBASE
       ret.centerToFront = CivicParams.CENTER_TO_FRONT
       ret.steerRatio = 15.38  # 10.93 is end-to-end spec
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
+      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2560, 8000], [0, 2566, 3840]]  # TODO: determine if there is a dead zone at the top end
       tire_stiffness_factor = 1.
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.22], [0.066]]
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
       ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
       ret.longitudinalTuning.kiBP = [0., 35.]
@@ -422,10 +437,16 @@ class CarInterface(CarInterfaceBase):
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront,
                                                                          tire_stiffness_factor=tire_stiffness_factor)
 
-    ret.gasMaxBP = [0.]  # m/s
-    ret.gasMaxV = [0.6] if ret.enableGasInterceptor else [0.]  # max gas allowed
-    ret.brakeMaxBP = [5., 20.]  # m/s
-    ret.brakeMaxV = [1., 0.8]   # max brake allowed
+    if candidate in HONDA_BOSCH:
+      ret.gasMaxBP = [0.0, 5., 10., 22., 35.] # m/s
+      ret.gasMaxV = [0.36, 0.24, 0.19, 0.17, 0.16] # max gas allowed
+      ret.brakeMaxBP = [0.]  # m/s
+      ret.brakeMaxV = [1.]   # max brake allowed
+    else:
+      ret.gasMaxBP = [0.]  # m/s
+      ret.gasMaxV = [0.6] if ret.enableGasInterceptor else [0.]  # max gas allowed
+      ret.brakeMaxBP = [5., 20.]  # m/s
+      ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
     ret.stoppingControl = True
     ret.startAccel = 0.5

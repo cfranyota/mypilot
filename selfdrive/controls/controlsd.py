@@ -10,6 +10,7 @@ from selfdrive.config import Conversions as CV
 from selfdrive.swaglog import cloudlog
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_car, get_startup_event, get_one_can
+from selfdrive.car.disable_radar import disable_radar
 from selfdrive.controls.lib.lane_planner import CAMERA_OFFSET
 from selfdrive.controls.lib.drive_helpers import update_v_cruise, initialize_v_cruise
 from selfdrive.controls.lib.longcontrol import LongControl, STARTING_TARGET_SPEED
@@ -94,6 +95,8 @@ class Controls:
     cp_bytes = self.CP.to_bytes()
     params.put("CarParams", cp_bytes)
     put_nonblocking("CarParamsCache", cp_bytes)
+    if self.CP.openpilotLongitudinalControl and self.CP.safetyModel in [car.CarParams.SafetyModel.hondaBoschGiraffe, car.CarParams.SafetyModel.hondaBoschHarness]:
+      disable_radar(self.can_sock, self.pm.sock['sendcan'], 1, timeout=1, retry=10)
 
     self.CC = car.CarControl.new_message()
     self.AM = AlertManager()

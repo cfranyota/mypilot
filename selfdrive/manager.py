@@ -173,7 +173,7 @@ managed_processes = {
   "camerad": ("selfdrive/camerad", ["./camerad"]),
   "sensord": ("selfdrive/sensord", ["./sensord"]),
   "clocksd": ("selfdrive/clocksd", ["./clocksd"]),
-  "updated": "selfdrive.updated",
+# "updated": "selfdrive.updated",
   "dmonitoringmodeld": ("selfdrive/modeld", ["./dmonitoringmodeld"]),
   "modeld": ("selfdrive/modeld", ["./modeld"]),
   "rtshield": "selfdrive.rtshield",
