@@ -94,8 +94,12 @@ class LongitudinalMpc():
 
     # Calculate mpc
     t = sec_since_boot()
-    self.n_its = self.libmpc.run_mpc(self.cur_state, self.mpc_solution, self.a_lead_tau, a_lead)
-    self.duration = int((sec_since_boot() - t) * 1e9)
+    TR = 1.6
+    n_its = self.libmpc.run_mpc(self.cur_state, self.mpc_solution, self.a_lead_tau, a_lead, TR)
+    duration = int((sec_since_boot() - t) * 1e9)
+
+    if LOG_MPC:
+      self.send_mpc_solution(pm, n_its, duration)
 
     # Get solution. MPC timestep is 0.2 s, so interpolation to 0.05 s is needed
     self.v_mpc = self.mpc_solution[0].v_ego[1]
