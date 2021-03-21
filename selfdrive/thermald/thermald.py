@@ -208,6 +208,10 @@ def thermald_thread():
         no_panda_cnt = 0
         startup_conditions["ignition"] = pandaState.pandaState.ignitionLine or pandaState.pandaState.ignitionCan
 
+      startup_conditions["hardware_supported"] = pandaState.pandaState.pandaType not in [log.PandaState.PandaType.whitePanda,
+                                                                                         log.PandaState.PandaType.greyPanda]
+      set_offroad_alert_if_changed("Offroad_HardwareUnsupported", not startup_conditions["hardware_supported"])
+
       # Setup fan handler on first connect to panda
       if handle_fan is None and pandaState.pandaState.pandaType != log.PandaState.PandaType.unknown:
         is_uno = pandaState.pandaState.pandaType == log.PandaState.PandaType.uno
@@ -347,10 +351,6 @@ def thermald_thread():
     startup_conditions["device_temp_good"] = thermal_status < ThermalStatus.danger
     set_offroad_alert_if_changed("Offroad_TemperatureTooHigh", (not startup_conditions["device_temp_good"]))
 
-    startup_conditions["hardware_supported"] = pandaState is not None and pandaState.pandaState.pandaType not in [log.PandaState.PandaType.whitePanda,
-                                                                                                   log.PandaState.PandaType.greyPanda]
-    set_offroad_alert_if_changed("Offroad_HardwareUnsupported", pandaState is not None and not startup_conditions["hardware_supported"])
-
     # Handle offroad/onroad transition
     should_start = all(startup_conditions.values())
     if should_start:
@@ -406,7 +406,8 @@ def thermald_thread():
     msg.deviceState.thermalStatus = thermal_status
     pm.send("deviceState", msg)
 
-    set_offroad_alert_if_changed("Offroad_ChargeDisabled", (not usb_power))
+    if EON and not is_uno:
+      set_offroad_alert_if_changed("Offroad_ChargeDisabled", (not usb_power))
 
     should_start_prev = should_start
     startup_conditions_prev = startup_conditions.copy()

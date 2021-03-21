@@ -8,7 +8,7 @@
 
 #include "offroad_alerts.hpp"
 #include "common/params.h"
-
+#include "selfdrive/hardware/hw.h"
 
 void cleanStackedWidget(QStackedWidget* swidget) {
   while(swidget->count() > 0) {
@@ -39,9 +39,7 @@ OffroadAlert::OffroadAlert(QWidget* parent) : QFrame(parent) {
   footer_layout->addWidget(reboot_btn, 0, Qt::AlignRight);
 
   QObject::connect(dismiss_btn, SIGNAL(released()), this, SIGNAL(closeAlerts()));
-#ifdef __aarch64__
-  QObject::connect(reboot_btn, &QPushButton::released, [=]() {std::system("sudo reboot");});
-#endif
+  QObject::connect(reboot_btn, &QPushButton::released, [=]() { Hardware::reboot(); });
 
   setLayout(main_layout);
   setStyleSheet(R"(
@@ -61,6 +59,13 @@ OffroadAlert::OffroadAlert(QWidget* parent) : QFrame(parent) {
     }
   )");
   main_layout->setMargin(50);
+
+  QFile inFile("../controls/lib/alerts_offroad.json");
+  bool ret = inFile.open(QIODevice::ReadOnly | QIODevice::Text);
+  assert(ret);
+  QJsonDocument doc = QJsonDocument::fromJson(inFile.readAll());
+  assert(!doc.isNull());
+  alert_keys = doc.object().keys();
 }
 
 void OffroadAlert::refresh() {
@@ -111,20 +116,7 @@ void OffroadAlert::refresh() {
 
 void OffroadAlert::parse_alerts() {
   alerts.clear();
-
-  // TODO: only read this once
-  QFile inFile("../controls/lib/alerts_offroad.json");
-  inFile.open(QIODevice::ReadOnly | QIODevice::Text);
-  QByteArray data = inFile.readAll();
-  inFile.close();
-
-  QJsonDocument doc = QJsonDocument::fromJson(data);
-  if (doc.isNull()) {
-    qDebug() << "Parse failed";
-  }
-
-  QJsonObject json = doc.object();
-  for (const QString &key : json.keys()) {
+  for (const QString &key : alert_keys) {
     std::vector<char> bytes = Params().read_db_bytes(key.toStdString().c_str());
 
     if (bytes.size()) {

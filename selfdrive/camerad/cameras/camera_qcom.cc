@@ -28,6 +28,9 @@
 #include "sensor_i2c.h"
 #include "camera_qcom.h"
 
+// leeco actuator (DW9800W H-Bridge Driver IC)
+// from sniff
+const uint16_t INFINITY_DAC = 364;
 
 extern ExitHandler do_exit;
 
@@ -117,12 +120,7 @@ static int imx298_apply_exposure(CameraState *s, int gain, int integ_lines, int 
     // REG_HOLD
     {0x104,0x0,0},
   };
-
-  int err = sensor_write_regs(s, reg_array, ARRAYSIZE(reg_array), MSM_CAMERA_I2C_BYTE_DATA);
-  if (err != 0) {
-    LOGE("apply_exposure err %d", err);
-  }
-  return err;
+  return sensor_write_regs(s, reg_array, ARRAYSIZE(reg_array), MSM_CAMERA_I2C_BYTE_DATA);
 }
 
 static int ov8865_apply_exposure(CameraState *s, int gain, int integ_lines, int frame_length) {
@@ -157,16 +155,12 @@ static int ov8865_apply_exposure(CameraState *s, int gain, int integ_lines, int 
 
     //{0x104,0x0,0},
   };
-  int err = sensor_write_regs(s, reg_array, ARRAYSIZE(reg_array), MSM_CAMERA_I2C_BYTE_DATA);
-  if (err != 0) {
-    LOGE("apply_exposure err %d", err);
-  }
-  return err;
+  return sensor_write_regs(s, reg_array, ARRAYSIZE(reg_array), MSM_CAMERA_I2C_BYTE_DATA);
 }
 
 static void camera_init(VisionIpcServer *v, CameraState *s, int camera_id, int camera_num,
                         uint32_t pixel_clock, uint32_t line_length_pclk,
-                        unsigned int max_gain, unsigned int fps, cl_device_id device_id, cl_context ctx,
+                        uint32_t max_gain, uint32_t fps, cl_device_id device_id, cl_context ctx,
                         VisionStreamType rgb_type, VisionStreamType yuv_type) {
   s->camera_num = camera_num;
   s->camera_id = camera_id;
@@ -183,17 +177,6 @@ static void camera_init(VisionIpcServer *v, CameraState *s, int camera_id, int c
 
   s->apply_exposure = (camera_id == CAMERA_ID_IMX298) ? imx298_apply_exposure : ov8865_apply_exposure;
   s->buf.init(device_id, ctx, s, v, FRAME_BUF_COUNT, rgb_type, yuv_type, camera_release_buffer);
-}
-
-cl_program build_conv_program(cl_device_id device_id, cl_context context, int image_w, int image_h, int filter_size) {
-  char args[4096];
-  snprintf(args, sizeof(args),
-          "-cl-fast-relaxed-math -cl-denorms-are-zero "
-          "-DIMAGE_W=%d -DIMAGE_H=%d -DFLIP_RB=%d "
-          "-DFILTER_SIZE=%d -DHALF_FILTER_SIZE=%d -DTWICE_HALF_FILTER_SIZE=%d -DHALF_FILTER_SIZE_IMAGE_W=%d",
-          image_w, image_h, 1,
-          filter_size, filter_size/2, (filter_size/2)*2, (filter_size/2)*image_w);
-  return cl_program_from_file(context, device_id, "imgproc/conv.cl", args);
 }
 
 void cameras_init(VisionIpcServer *v, MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
@@ -239,28 +222,17 @@ void cameras_init(VisionIpcServer *v, MultiCameraState *s, cl_device_id device_i
     s->focus_bufs[i].allocate(0xb80);
     s->stats_bufs[i].allocate(0xb80);
   }
-  const int width = s->road_cam.buf.rgb_width/NUM_SEGMENTS_X;
-  const int height = s->road_cam.buf.rgb_height/NUM_SEGMENTS_Y;
-  s->prg_rgb_laplacian = build_conv_program(device_id, ctx, width, height, 3);
-  s->krnl_rgb_laplacian = CL_CHECK_ERR(clCreateKernel(s->prg_rgb_laplacian, "rgb2gray_conv2d", &err));
-  // TODO: Removed CL_MEM_SVM_FINE_GRAIN_BUFFER, confirm it doesn't matter
-  s->rgb_conv_roi_cl = CL_CHECK_ERR(clCreateBuffer(ctx, CL_MEM_READ_WRITE,
-      width * height * 3 * sizeof(uint8_t), NULL, &err));
-  s->rgb_conv_result_cl = CL_CHECK_ERR(clCreateBuffer(ctx, CL_MEM_READ_WRITE,
-      width * height * sizeof(int16_t), NULL, &err));
-  s->rgb_conv_filter_cl = CL_CHECK_ERR(clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-      9 * sizeof(int16_t), (void*)&lapl_conv_krnl, &err));
-
   std::fill_n(s->lapres, std::size(s->lapres), 16160);
+  s->lap_conv = new LapConv(device_id, ctx, s->road_cam.buf.rgb_width, s->road_cam.buf.rgb_height, 3);
 }
 
 static void set_exposure(CameraState *s, float exposure_frac, float gain_frac) {
   int err = 0;
 
-  unsigned int frame_length = s->pixel_clock / s->line_length_pclk / s->fps;
+  uint32_t frame_length = s->pixel_clock / s->line_length_pclk / s->fps;
 
-  unsigned int gain = s->cur_gain;
-  unsigned int integ_lines = s->cur_integ_lines;
+  uint32_t gain = s->cur_gain;
+  uint32_t integ_lines = s->cur_integ_lines;
 
   if (exposure_frac >= 0) {
     exposure_frac = std::clamp(exposure_frac, 2.0f / frame_length, 1.0f);
@@ -297,6 +269,8 @@ static void set_exposure(CameraState *s, float exposure_frac, float gain_frac) {
       s->cur_gain = gain;
       s->cur_integ_lines = integ_lines;
       s->cur_frame_length = frame_length;
+    } else {
+      LOGE("camera %d apply_exposure err: %d", s->camera_num, err);
     }
   }
 
@@ -316,9 +290,9 @@ static void do_autoexposure(CameraState *s, float grey_frac) {
     const float gain_frac_min = 0.015625;
     const float gain_frac_max = 1.0;
     // exposure time limits
-    unsigned int frame_length = s->pixel_clock / s->line_length_pclk / s->fps;
-    const unsigned int exposure_time_min = 16;
-    const unsigned int exposure_time_max = frame_length - 11; // copied from set_exposure()
+    uint32_t frame_length = s->pixel_clock / s->line_length_pclk / s->fps;
+    const uint32_t exposure_time_min = 16;
+    const uint32_t exposure_time_max = frame_length - 11; // copied from set_exposure()
 
     float cur_gain_frac = s->cur_gain_frac;
     float exposure_factor = pow(1.05, (target_grey - grey_frac) / 0.05);
@@ -348,28 +322,6 @@ static void do_autoexposure(CameraState *s, float grey_frac) {
 
     set_exposure(s, new_exposure, new_gain);
   }
-}
-
-static uint8_t* get_eeprom(int eeprom_fd, size_t *out_len) {
-  msm_eeprom_cfg_data cfg = {.cfgtype = CFG_EEPROM_GET_CAL_DATA};
-  int err = ioctl(eeprom_fd, VIDIOC_MSM_EEPROM_CFG, &cfg);
-  assert(err >= 0);
-
-  uint32_t num_bytes = cfg.cfg.get_data.num_bytes;
-  assert(num_bytes > 100);
-
-  uint8_t* buffer = (uint8_t*)malloc(num_bytes);
-  assert(buffer);
-  memset(buffer, 0, num_bytes);
-
-  cfg.cfgtype = CFG_EEPROM_READ_CAL_DATA;
-  cfg.cfg.read_data.num_bytes = num_bytes;
-  cfg.cfg.read_data.dbuffer = buffer;
-  err = ioctl(eeprom_fd, VIDIOC_MSM_EEPROM_CFG, &cfg);
-  assert(err >= 0);
-
-  *out_len = num_bytes;
-  return buffer;
 }
 
 static void sensors_init(MultiCameraState *s) {
@@ -483,9 +435,6 @@ static void camera_open(CameraState *s, bool is_road_cam) {
     sensor_dev = "/dev/v4l-subdev17";
     s->isp_fd = open("/dev/v4l-subdev13", O_RDWR | O_NONBLOCK);
     assert(s->isp_fd >= 0);
-    s->eeprom_fd = open("/dev/v4l-subdev8", O_RDWR | O_NONBLOCK);
-    assert(s->eeprom_fd >= 0);
-
     s->actuator_fd = open("/dev/v4l-subdev7", O_RDWR | O_NONBLOCK);
     assert(s->actuator_fd >= 0);
   } else {
@@ -496,8 +445,6 @@ static void camera_open(CameraState *s, bool is_road_cam) {
     sensor_dev = "/dev/v4l-subdev18";
     s->isp_fd = open("/dev/v4l-subdev14", O_RDWR | O_NONBLOCK);
     assert(s->isp_fd >= 0);
-    s->eeprom_fd = open("/dev/v4l-subdev9", O_RDWR | O_NONBLOCK);
-    assert(s->eeprom_fd >= 0);
   }
 
   // wait for sensor device
@@ -559,14 +506,6 @@ static void camera_open(CameraState *s, bool is_road_cam) {
   // **** GO GO GO ****
   LOG("******************** GO GO GO ************************");
 
-  s->eeprom = get_eeprom(s->eeprom_fd, &s->eeprom_size);
-
-  // printf("eeprom:\n");
-  // for (int i=0; i<s->eeprom_size; i++) {
-  //   printf("%02x", s->eeprom[i]);
-  // }
-  // printf("\n");
-
   // CSID: init csid
   csid_cfg_data.cfgtype = CSID_INIT;
   err = ioctl(s->csid_fd, VIDIOC_MSM_CSID_IO_CFG, &csid_cfg_data);
@@ -617,10 +556,6 @@ static void camera_open(CameraState *s, bool is_road_cam) {
     err = ioctl(s->actuator_fd, VIDIOC_MSM_ACTUATOR_CFG, &actuator_cfg_data);
     LOG("actuator init: %d", err);
 
-    // leeco actuator (DW9800W H-Bridge Driver IC)
-    // from sniff
-    s->infinity_dac = 364;
-
     struct msm_actuator_reg_params_t actuator_reg_params[] = {
       {
         .reg_write_type = MSM_ACTUATOR_WRITE_DAC,
@@ -662,7 +597,7 @@ static void camera_open(CameraState *s, bool is_road_cam) {
         .park_lens = {.damping_step = 1023, .damping_delay = 14000, .hw_params = 11, .max_step = 20},
       },
       .af_tuning_params = {
-        .initial_code = (int16_t)s->infinity_dac,
+        .initial_code = INFINITY_DAC,
         .pwd_step = 0,
         .region_size = 1,
         .total_steps = 238,
@@ -820,40 +755,24 @@ static void camera_open(CameraState *s, bool is_road_cam) {
   LOG("isp start stream: %d", err);
 }
 
-
-static struct damping_params_t actuator_ringing_params = {
-  .damping_step = 1023,
-  .damping_delay = 15000,
-  .hw_params = 0x0000e422,
-};
-
 static void road_camera_start(CameraState *s) {
-  struct msm_actuator_cfg_data actuator_cfg_data = {0};
-
   set_exposure(s, 1.0, 1.0);
 
   int err = sensor_write_regs(s, start_reg_array, ARRAYSIZE(start_reg_array), MSM_CAMERA_I2C_BYTE_DATA);
   LOG("sensor start regs: %d", err);
 
-  // focus on infinity assuming phone is perpendicular
-  int inf_step;
-
-  actuator_ringing_params.damping_step = 1023;
-  actuator_ringing_params.damping_delay = 20000;
-  actuator_ringing_params.hw_params = 13;
-
-  inf_step = 512 - s->infinity_dac;
+  int inf_step = 512 - INFINITY_DAC;
 
   // initial guess
   s->lens_true_pos = 400;
 
   // reset lens position
-  memset(&actuator_cfg_data, 0, sizeof(actuator_cfg_data));
+  struct msm_actuator_cfg_data actuator_cfg_data = {};
   actuator_cfg_data.cfgtype = CFG_SET_POSITION;
   actuator_cfg_data.cfg.setpos = (struct msm_actuator_set_position_t){
     .number_of_steps = 1,
     .hw_params = (uint32_t)7,
-    .pos = {s->infinity_dac, 0},
+    .pos = {INFINITY_DAC, 0},
     .delay = {0,}
   };
   err = ioctl(s->actuator_fd, VIDIOC_MSM_ACTUATOR_CFG, &actuator_cfg_data);
@@ -878,12 +797,19 @@ static void road_camera_start(CameraState *s) {
   s->cur_step_pos = inf_step;
 
   actuator_move(s, s->cur_lens_pos);
-
   LOG("init lens pos: %d", s->cur_lens_pos);
 }
 
 void actuator_move(CameraState *s, uint16_t target) {
   // LP3 moves only on even positions. TODO: use proper sensor params
+
+  // focus on infinity assuming phone is perpendicular
+  static struct damping_params_t actuator_ringing_params = {
+      .damping_step = 1023,
+      .damping_delay = 20000,
+      .hw_params = 13,
+  };
+
   int step = (target - s->cur_lens_pos) / 2;
 
   int dest_step_pos = s->cur_step_pos + step;
@@ -892,19 +818,17 @@ void actuator_move(CameraState *s, uint16_t target) {
   struct msm_actuator_cfg_data actuator_cfg_data = {0};
   actuator_cfg_data.cfgtype = CFG_MOVE_FOCUS;
   actuator_cfg_data.cfg.move = (struct msm_actuator_move_params_t){
-    .dir = (int8_t)((step > 0) ? 0 : 1),
-    .sign_dir = (int8_t)((step > 0) ? 1 : -1),
+    .dir = (int8_t)((step > 0) ? MOVE_NEAR : MOVE_FAR),
+    .sign_dir = (int8_t)((step > 0) ? MSM_ACTUATOR_MOVE_SIGNED_NEAR : MSM_ACTUATOR_MOVE_SIGNED_FAR),
     .dest_step_pos = (int16_t)dest_step_pos,
     .num_steps = abs(step),
     .curr_lens_pos = s->cur_lens_pos,
     .ringing_params = &actuator_ringing_params,
   };
-  int err = ioctl(s->actuator_fd, VIDIOC_MSM_ACTUATOR_CFG, &actuator_cfg_data);
-  LOG("actuator move focus: %d", err);
+  ioctl(s->actuator_fd, VIDIOC_MSM_ACTUATOR_CFG, &actuator_cfg_data);
 
   s->cur_step_pos = dest_step_pos;
   s->cur_lens_pos = actuator_cfg_data.cfg.move.curr_lens_pos;
-
   //LOGD("step %d   target: %d  lens pos: %d", dest_step_pos, target, s->cur_lens_pos);
 }
 
@@ -1105,11 +1029,9 @@ static void camera_close(CameraState *s) {
       LOG("isp release stream: %d", err);
     }
   }
-
-  free(s->eeprom);
 }
 
-const char* get_isp_event_name(unsigned int type) {
+const char* get_isp_event_name(uint32_t type) {
   switch (type) {
   case ISP_EVENT_REG_UPDATE: return "ISP_EVENT_REG_UPDATE";
   case ISP_EVENT_EPOCH_0: return "ISP_EVENT_EPOCH_0";
@@ -1176,40 +1098,6 @@ static void ops_thread(MultiCameraState *s) {
   }
 }
 
-static void update_lapmap(MultiCameraState *s, const CameraBuf *b, const int cnt) {
-  const size_t width = b->rgb_width / NUM_SEGMENTS_X;
-  const size_t height = b->rgb_height / NUM_SEGMENTS_Y;
-  static std::unique_ptr<uint8_t[]> rgb_roi_buf = std::make_unique<uint8_t[]>(width * height * 3);
-  static std::unique_ptr<int16_t[]> conv_result = std::make_unique<int16_t[]>(width * height);
-
-  // sharpness scores
-  const int roi_id = cnt % std::size(s->lapres);  // rolling roi
-  const int x_offset = ROI_X_MIN + roi_id % (ROI_X_MAX - ROI_X_MIN + 1);
-  const int y_offset = ROI_Y_MIN + roi_id / (ROI_X_MAX - ROI_X_MIN + 1);
-
-  const uint8_t *rgb_addr_offset = (uint8_t *)b->cur_rgb_buf->addr + y_offset * height * FULL_STRIDE_X * 3 + x_offset * width * 3;
-  for (int i = 0; i < height; ++i) {
-    memcpy(rgb_roi_buf.get() + i * width * 3, rgb_addr_offset + i * FULL_STRIDE_X * 3, width * 3);
-  }
-
-  constexpr int conv_cl_localMemSize = (CONV_LOCAL_WORKSIZE + 2 * (3 / 2)) * (CONV_LOCAL_WORKSIZE + 2 * (3 / 2)) * (3 * sizeof(uint8_t));
-  CL_CHECK(clEnqueueWriteBuffer(b->q, s->rgb_conv_roi_cl, true, 0, width * height * 3 * sizeof(uint8_t), rgb_roi_buf.get(), 0, 0, 0));
-  CL_CHECK(clSetKernelArg(s->krnl_rgb_laplacian, 0, sizeof(cl_mem), (void *)&s->rgb_conv_roi_cl));
-  CL_CHECK(clSetKernelArg(s->krnl_rgb_laplacian, 1, sizeof(cl_mem), (void *)&s->rgb_conv_result_cl));
-  CL_CHECK(clSetKernelArg(s->krnl_rgb_laplacian, 2, sizeof(cl_mem), (void *)&s->rgb_conv_filter_cl));
-  CL_CHECK(clSetKernelArg(s->krnl_rgb_laplacian, 3, conv_cl_localMemSize, 0));
-  cl_event conv_event;
-  CL_CHECK(clEnqueueNDRangeKernel(b->q, s->krnl_rgb_laplacian, 2, NULL,
-                                  (size_t[]){width, height}, (size_t[]){CONV_LOCAL_WORKSIZE, CONV_LOCAL_WORKSIZE}, 0, 0, &conv_event));
-  clWaitForEvents(1, &conv_event);
-  CL_CHECK(clReleaseEvent(conv_event));
-
-  CL_CHECK(clEnqueueReadBuffer(b->q, s->rgb_conv_result_cl, true, 0,
-                               width * height * sizeof(int16_t), conv_result.get(), 0, 0, 0));
-
-  s->lapres[roi_id] = get_lapmap_one(conv_result.get(), width, height);
-}
-
 static void setup_self_recover(CameraState *c, const uint16_t *lapres, size_t lapres_size) {
   const float lens_true_pos = c->lens_true_pos.load();
   int self_recover = c->self_recover.load();
@@ -1238,7 +1126,8 @@ void process_driver_camera(MultiCameraState *s, CameraState *c, int cnt) {
 // called by processing_thread
 void process_road_camera(MultiCameraState *s, CameraState *c, int cnt) {
   const CameraBuf *b = &c->buf;
-  update_lapmap(s, b, cnt);
+  const int roi_id = cnt % std::size(s->lapres);  // rolling roi
+  s->lapres[roi_id] = s->lap_conv->Update(b->q, (uint8_t *)b->cur_rgb_buf->addr, roi_id);
   setup_self_recover(c, &s->lapres[0], std::size(s->lapres));
 
   MessageBuilder msg;
@@ -1257,7 +1146,7 @@ void process_road_camera(MultiCameraState *s, CameraState *c, int cnt) {
   if (cnt % 3 == 0) {
     const int x = 290, y = 322, width = 560, height = 314;
     const int skip = 1;
-    set_exposure_target(c, x, x + width, skip, y, y + height, skip);
+    camera_autoexposure(c, set_exposure_target(b, x, x + width, skip, y, y + height, skip, -1, false, false));
   }
 }
 
@@ -1310,9 +1199,9 @@ void cameras_run(MultiCameraState *s) {
         c->frame_metadata[c->frame_metadata_idx] = (FrameMetadata){
             .frame_id = isp_event_data->frame_id,
             .timestamp_eof = timestamp,
-            .frame_length = (unsigned int)c->cur_frame_length,
-            .integ_lines = (unsigned int)c->cur_integ_lines,
-            .global_gain = (unsigned int)c->cur_gain,
+            .frame_length = (uint32_t)c->cur_frame_length,
+            .integ_lines = (uint32_t)c->cur_integ_lines,
+            .global_gain = (uint32_t)c->cur_gain,
             .lens_pos = c->cur_lens_pos,
             .lens_sag = c->last_sag_acc_z,
             .lens_err = c->focus_err,
@@ -1341,12 +1230,8 @@ void cameras_close(MultiCameraState *s) {
     s->focus_bufs[i].free();
     s->stats_bufs[i].free();
   }
-  CL_CHECK(clReleaseMemObject(s->rgb_conv_roi_cl));
-  CL_CHECK(clReleaseMemObject(s->rgb_conv_result_cl));
-  CL_CHECK(clReleaseMemObject(s->rgb_conv_filter_cl));
 
-  CL_CHECK(clReleaseKernel(s->krnl_rgb_laplacian));
-  CL_CHECK(clReleaseProgram(s->prg_rgb_laplacian));
+  delete s->lap_conv;
   delete s->sm;
   delete s->pm;
 }

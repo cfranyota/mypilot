@@ -19,8 +19,9 @@
 #include "widgets/toggle.hpp"
 #include "widgets/offroad_alerts.hpp"
 
-#include "common/params.h"
-#include "common/util.h"
+#include "selfdrive/common/params.h"
+#include "selfdrive/common/util.h"
+#include "selfdrive/hardware/hw.h"
 
 QFrame* horizontal_line(QWidget* parent = 0){
   QFrame* line = new QFrame(parent);
@@ -43,17 +44,19 @@ QWidget* labelWidget(QString labelName, QString labelContent){
 
 ParamsToggle::ParamsToggle(QString param, QString title, QString description, QString icon_path, QWidget *parent): QFrame(parent) , param(param) {
   QHBoxLayout *layout = new QHBoxLayout;
+  layout->setMargin(0);
   layout->setSpacing(50);
 
   // Parameter image
+  const int img_size = 80;
   if (icon_path.length()) {
     QPixmap pix(icon_path);
     QLabel *icon = new QLabel();
-    icon->setPixmap(pix.scaledToWidth(80, Qt::SmoothTransformation));
+    icon->setPixmap(pix.scaledToWidth(img_size, Qt::SmoothTransformation));
     icon->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     layout->addWidget(icon);
   } else {
-    layout->addSpacing(80);
+    layout->addSpacing(img_size);
   }
 
   // Name of the parameter
@@ -62,7 +65,7 @@ ParamsToggle::ParamsToggle(QString param, QString title, QString description, QS
   layout->addWidget(label);
 
   // toggle switch
-  Toggle *toggle = new Toggle(this);
+  toggle = new Toggle(this);
   toggle->setFixedSize(150, 100);
   layout->addWidget(toggle);
   QObject::connect(toggle, SIGNAL(stateChanged(int)), this, SLOT(checkboxClicked(int)));
@@ -102,12 +105,6 @@ QWidget * toggles_panel() {
                                             "../assets/offroad/icon_warning.png"
                                               ));
   toggles_list->addWidget(horizontal_line());
-  toggles_list->addWidget(new ParamsToggle("RecordFront",
-                                            "Record and Upload Driver Camera",
-                                            "Upload data from the driver facing camera and help improve the driver monitoring algorithm.",
-                                            "../assets/offroad/icon_network.png"
-                                            ));
-  toggles_list->addWidget(horizontal_line());
   toggles_list->addWidget(new ParamsToggle("IsRHD",
                                             "Enable Right-Hand Drive",
                                             "Allow openpilot to obey left-hand traffic conventions and perform driver monitoring on right driver seat.",
@@ -125,6 +122,16 @@ QWidget * toggles_panel() {
                                             "Use features from the open source community that are not maintained or supported by comma.ai and have not been confirmed to meet the standard safety model. These features include community supported cars and community supported hardware. Be extra cautious when using these features",
                                             "../assets/offroad/icon_shell.png"
                                             ));
+
+  ParamsToggle *record_toggle = new ParamsToggle("RecordFront",
+                                            "Record and Upload Driver Camera",
+                                            "Upload data from the driver facing camera and help improve the driver monitoring algorithm.",
+                                            "../assets/offroad/icon_network.png");
+  toggles_list->addWidget(horizontal_line());
+  toggles_list->addWidget(record_toggle);
+
+  bool record_lock = Params().read_db_bool("RecordFrontLock");
+  record_toggle->toggle->setEnabled(!record_lock);
 
   QWidget *widget = new QWidget;
   widget->setLayout(toggles_list);
@@ -170,15 +177,25 @@ QWidget * device_panel() {
     }
   });
 
+  // power buttons
+
   QPushButton *poweroff_btn = new QPushButton("Power Off");
   device_layout->addWidget(poweroff_btn, Qt::AlignBottom);
+  QObject::connect(poweroff_btn, &QPushButton::released, [=]() {
+    if (ConfirmationDialog::confirm("Are you sure you want to power off?")) {
+      Hardware::poweroff();
+    }
+  });
+
+  device_layout->addWidget(horizontal_line(), Qt::AlignBottom);
+
   QPushButton *reboot_btn = new QPushButton("Reboot");
   device_layout->addWidget(reboot_btn, Qt::AlignBottom);
-  device_layout->addWidget(horizontal_line(), Qt::AlignBottom);
-#ifdef __aarch64__
-  QObject::connect(poweroff_btn, &QPushButton::released, [=]() { std::system("sudo poweroff"); });
-  QObject::connect(reboot_btn, &QPushButton::released, [=]() { std::system("sudo reboot"); });
-#endif
+  QObject::connect(reboot_btn, &QPushButton::released, [=]() {
+    if (ConfirmationDialog::confirm("Are you sure you want to reboot?")) {
+      Hardware::reboot();
+    }
+  });
 
   QPushButton *uninstall_btn = new QPushButton("Uninstall openpilot");
   device_layout->addWidget(uninstall_btn);
@@ -205,8 +222,6 @@ QWidget * developer_panel() {
   QVBoxLayout *main_layout = new QVBoxLayout;
   main_layout->setMargin(100);
 
-  // TODO: enable SSH toggle and github keys
-
   Params params = Params();
   std::string brand = params.read_db_bool("Passive") ? "dashcam" : "openpilot";
   std::vector<std::pair<std::string, std::string>> labels = {
@@ -214,18 +229,14 @@ QWidget * developer_panel() {
     {"Git Branch", params.get("GitBranch", false)},
     {"Git Commit", params.get("GitCommit", false).substr(0, 10)},
     {"Panda Firmware", params.get("PandaFirmwareHex", false)},
+    {"OS Version", Hardware::get_os_version()},
   };
 
-  std::string os_version = util::read_file("/VERSION");
-  if (os_version.size()) {
-    labels.push_back({"OS Version", "AGNOS " + os_version});
-  }
-
-  for (int i = 0; i<labels.size(); i++) {
+  for (int i = 0; i < labels.size(); i++) {
     auto l = labels[i];
     main_layout->addWidget(labelWidget(QString::fromStdString(l.first), QString::fromStdString(l.second)));
 
-    if(i+1<labels.size()) {
+    if(i+1 < labels.size()) {
       main_layout->addWidget(horizontal_line());
     }
   }
