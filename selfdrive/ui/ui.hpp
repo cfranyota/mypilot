@@ -34,8 +34,10 @@
 #define COLOR_WHITE nvgRGBA(255, 255, 255, 255)
 #define COLOR_WHITE_ALPHA(x) nvgRGBA(255, 255, 255, x)
 #define COLOR_RED_ALPHA(x) nvgRGBA(201, 34, 49, x)
+#define COLOR_GREEN_ALPHA(x) nvgRGBA(69, 186, 71, x)
 #define COLOR_YELLOW nvgRGBA(218, 202, 37, 255)
 #define COLOR_RED nvgRGBA(201, 34, 49, 255)
+#define COLOR_GREEN nvgRGBA(69, 186, 71, 255)
 
 #define UI_BUF_COUNT 4
 
