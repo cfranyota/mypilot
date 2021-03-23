@@ -38,7 +38,6 @@ IGNORE_PROCESSES = set(["rtshield", "uploader", "deleter", "loggerd", "logmessag
 ThermalStatus = log.DeviceState.ThermalStatus
 State = log.ControlsState.OpenpilotState
 PandaType = log.PandaState.PandaType
-LongitudinalPlanSource = log.LongitudinalPlan.LongitudinalPlanSource
 Desire = log.LateralPlan.Desire
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
