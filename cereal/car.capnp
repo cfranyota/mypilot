@@ -110,6 +110,13 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     localizerMalfunction @103;
 
     driverMonitorLowAccDEPRECATED @68;
+    manualSteeringRequired @105;
+    manualLongitudinalRequired @106;
+    silentPedalPressed @107;
+    silentButtonEnable @108;
+    silentBrakeHold @109;
+    silentWrongGear @110;
+
     radarCanErrorDEPRECATED @15;
     radarCommIssueDEPRECATED @67;
     gasUnavailableDEPRECATED @3;
@@ -189,6 +196,13 @@ struct CarState {
 
   readdistancelines @37 :Int16;
   engineRPM @38 :Float32;
+  lkasEnabled @39 :Bool;
+  leftBlinkerOn @40 :Bool;
+  rightBlinkerOn @41 :Bool;
+  disengageByBrake @42 :Bool;
+  automaticLaneChange @43 :Bool;
+  belowLaneChangeSpeed @44 :Bool;
+  accEnabled @45 :Bool;
 
   # which packets this state came from
   canMonoTimes @12: List(UInt64);
