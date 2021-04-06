@@ -9,7 +9,7 @@ STOPPING_TARGET_SPEED_OFFSET = 0.01
 STARTING_TARGET_SPEED = 0.5
 BRAKE_THRESHOLD_TO_PID = 0.2
 
-BRAKE_STOPPING_TARGET = 0.5  # apply at least this amount of brake to maintain the vehicle stationary
+BRAKE_STOPPING_TARGET = 1.0 # 0.5  # apply at least this amount of brake to maintain the vehicle stationary
 
 RATE = 100.0
 
@@ -58,12 +58,20 @@ class LongControl():
                             rate=RATE,
                             sat_limit=0.8,
                             convert=compute_gb)
+    self.pid_accel = PIController(([0, 1], [0.1, 0.1]),
+                            ([0, 1], [0.05, 0.05]),
+                            pos_limit=2.0,
+                            neg_limit=-3.5,
+                            rate=RATE,
+                            sat_limit=0.8)
     self.v_pid = 0.0
+    self.accel_out = 0.0
     self.last_output_gb = 0.0
 
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
     self.pid.reset()
+    self.pid_accel.reset()
     self.v_pid = v_pid
 
   def update(self, active, CS, v_target, v_target_future, a_target, CP):
@@ -97,6 +105,8 @@ class LongControl():
 
       output_gb = self.pid.update(self.v_pid, v_ego_pid, speed=v_ego_pid, deadzone=deadzone, feedforward=a_target, freeze_integrator=prevent_overshoot)
 
+      self.accel_out = self.pid_accel.update(a_target, CS.aEgo)
+
       if prevent_overshoot:
         output_gb = min(output_gb, 0.0)
 
@@ -118,5 +128,6 @@ class LongControl():
     self.last_output_gb = output_gb
     final_gas = clip(output_gb, 0., gas_max)
     final_brake = -clip(output_gb, -brake_max, 0.)
+    final_accel = a_target # self.accel_out
 
-    return final_gas, final_brake
+    return final_gas, final_brake, final_accel

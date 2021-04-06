@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 from cereal import car
-from common.numpy_fast import clip, interp
+from common.numpy_fast import clip #, interp
 from common.params import Params
 from common.realtime import DT_CTRL
 from selfdrive.swaglog import cloudlog
@@ -22,7 +22,7 @@ ALT_BRAKE_FLAG = 1
 BOSCH_LONG_FLAG = 2
 
 def compute_gb_honda_bosch(accel, speed):
-  return float(accel) / 4.8
+  return float(accel) / 5.0
 
 def compute_gb_honda_nidec(accel, speed):
   creep_brake = 0.0
@@ -96,37 +96,37 @@ class CarInterface(CarInterfaceBase):
   def compute_gb(accel, speed): # pylint: disable=method-hidden
     raise NotImplementedError
 
-  @staticmethod
-  def calc_accel_override(a_ego, a_target, v_ego, v_target):
+  # @staticmethod
+  # def calc_accel_override(a_ego, a_target, v_ego, v_target):
 
     # normalized max accel. Allowing max accel at low speed causes speed overshoots
-    max_accel_bp = [10, 20]    # m/s
-    max_accel_v = [0.714, 1.0]  # unit of max accel
-    max_accel = interp(v_ego, max_accel_bp, max_accel_v)
+    # max_accel_bp = [10, 20]    # m/s
+    # max_accel_v = [0.714, 1.0]  # unit of max accel
+    # max_accel = interp(v_ego, max_accel_bp, max_accel_v)
 
     # limit the pcm accel cmd if:
     # - v_ego exceeds v_target, or
     # - a_ego exceeds a_target and v_ego is close to v_target
 
-    eA = a_ego - a_target
-    valuesA = [1.0, 0.1]
-    bpA = [0.3, 1.1]
+    # eA = a_ego - a_target
+    # valuesA = [1.0, 0.1]
+    # bpA = [0.3, 1.1]
 
-    eV = v_ego - v_target
-    valuesV = [1.0, 0.1]
-    bpV = [0.0, 0.5]
+    # eV = v_ego - v_target
+    # valuesV = [1.0, 0.1]
+    # bpV = [0.0, 0.5]
 
-    valuesRangeV = [1., 0.]
-    bpRangeV = [-1., 0.]
+    # valuesRangeV = [1., 0.]
+    # bpRangeV = [-1., 0.]
 
     # only limit if v_ego is close to v_target
-    speedLimiter = interp(eV, bpV, valuesV)
-    accelLimiter = max(interp(eA, bpA, valuesA), interp(eV, bpRangeV, valuesRangeV))
+    # speedLimiter = interp(eV, bpV, valuesV)
+    # accelLimiter = max(interp(eA, bpA, valuesA), interp(eV, bpRangeV, valuesRangeV))
 
     # accelOverride is more or less the max throttle allowed to pcm: usually set to a constant
     # unless aTargetMax is very high and then we scale with it; this help in quicker restart
 
-    return float(max(max_accel, a_target / A_ACC_MAX)) * min(speedLimiter, accelLimiter)
+    # return float(max(max_accel, a_target / A_ACC_MAX)) * min(speedLimiter, accelLimiter)
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=[]):  # pylint: disable=dangerous-default-value
@@ -442,14 +442,17 @@ class CarInterface(CarInterfaceBase):
       ret.gasMaxV = [0.36, 0.24, 0.19, 0.17, 0.16] # max gas allowed
       ret.brakeMaxBP = [0.]  # m/s
       ret.brakeMaxV = [1.]   # max brake allowed
+      ret.startAccel = 0.3
+      ret.longitudinalTuning.deadzoneBP = [0., 8.05]
+      ret.longitudinalTuning.deadzoneV = [.0, .14]
     else:
       ret.gasMaxBP = [0.]  # m/s
       ret.gasMaxV = [0.6] if ret.enableGasInterceptor else [0.]  # max gas allowed
       ret.brakeMaxBP = [5., 20.]  # m/s
       ret.brakeMaxV = [1., 0.8]   # max brake allowed
+      ret.startAccel = 0.5
 
     ret.stoppingControl = True
-    ret.startAccel = 0.5
 
     ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 0.5
@@ -569,7 +572,7 @@ class CarInterface(CarInterfaceBase):
 
   # pass in a car.CarControl
   # to be called @ 100hz
-  def apply(self, c):
+  def apply(self, c, atarget):
     if c.hudControl.speedVisible:
       hud_v_cruise = c.hudControl.setSpeed * CV.MS_TO_KPH
     else:
@@ -577,8 +580,9 @@ class CarInterface(CarInterfaceBase):
 
     pcm_accel = int(clip(c.cruiseControl.accelOverride, 0, 1) * 0xc6)
 
-    can_sends = self.CC.update(c.enabled, self.CS, self.frame,
+    can_sends = self.CC.update(c.enabled, c.active, self.CS, self.frame,
                                c.actuators,
+                               atarget,
                                c.cruiseControl.speedOverride,
                                c.cruiseControl.override,
                                c.cruiseControl.cancel,

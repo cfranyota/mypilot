@@ -7,6 +7,8 @@ from selfdrive.car.honda.values import HONDA_BOSCH, CAR
 # 2 = ACC-CAN - camera side
 # 3 = F-CAN A - OBDII port
 
+BOSCH_BRAKE_LIGHT_THRESHOLD = -0.1
+
 def get_pt_bus(car_fingerprint):
   return 1 if car_fingerprint in HONDA_BOSCH else 0
 
@@ -44,17 +46,17 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
 
 
-def create_acc_commands(packer, enabled, accel, gas, idx, stopping, starting, car_fingerprint):
+def create_acc_commands(packer, enabled, active, accel, gas, idx, stopped, starting, car_fingerprint):
   commands = []
   bus = get_pt_bus(car_fingerprint)
 
   control_on = 5 if enabled else 0
   # no gas = -30000
-  gas_command = gas if enabled and gas > 0 else -30000
-  accel_command = accel if enabled else 0
-  braking = 1 if enabled and accel < 0 else 0
-  standstill = 1 if enabled and stopping else 0
-  standstill_release = 1 if enabled and starting else 0
+  gas_command = gas if active and accel >= -0.0 else -30000
+  accel_command = accel if active else 0.
+  braking = 1 if active and accel <= BOSCH_BRAKE_LIGHT_THRESHOLD else 0
+  standstill = 1 if active and stopped else 0
+  standstill_release = 1 if active and starting else 0
 
   acc_control_values = {
     # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
@@ -110,12 +112,15 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
       acc_hud_values = {
         'CRUISE_SPEED': hud.v_cruise,
         'ENABLE_MINI_CAR': 1,
-        'SET_TO_1': 1,
+        # 'SET_TO_1': 1, TODO: set in opendbc
         'HUD_LEAD': hud.car,
         'HUD_DISTANCE': 3,
         'ACC_ON': hud.car != 0,
-        'SET_TO_X1': 1,
+        # 'SET_TO_X1': 1,
         'IMPERIAL_UNIT': int(not is_metric),
+        'FCM_OFF_1': 0, # disable FCM message - DON'T DO THIS!!
+        'FCM_OFF_2': 0 if not hud.car else 0,
+        'FCM_OFF_3': 0,
       }
     else:
       acc_hud_values = {
@@ -146,7 +151,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
 
   if radar_disabled and car_fingerprint in HONDA_BOSCH:
     radar_hud_values = {
-      'SET_TO_1' : 0x01,
+      'SET_TO_1': 0x01,
     }
     commands.append(packer.make_can_msg('RADAR_HUD', bus_pt, radar_hud_values, idx))
 

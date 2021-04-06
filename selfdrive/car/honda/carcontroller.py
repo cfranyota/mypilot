@@ -10,6 +10,8 @@ from opendbc.can.packer import CANPacker
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
+BOSCH_ACCEL_MAX = 2.0
+BOSCH_ACCEL_MIN = -3.5
 BOSCH_ACCEL_LOOKUP_BP = [-1., 0., 0.6]
 BOSCH_ACCEL_LOOKUP_V = [-3.5, 0., 2.]
 BOSCH_GAS_LOOKUP_BP = [0., 0.6]
@@ -89,10 +91,13 @@ class CarController():
     self.last_pump_ts = 0.
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
+    self.stopped_frame = 0
+    self.last_wheeltick = 0
+    self.last_wheeltick_ct = 0
 
     self.params = CarControllerParams(CP)
 
-  def update(self, enabled, CS, frame, actuators,
+  def update(self, enabled, active, CS, frame, actuators, aTarget,
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel,
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
 
@@ -131,16 +136,37 @@ class CarController():
     # **** process the car messages ****
 
     if CS.CP.carFingerprint in HONDA_BOSCH:
-      stopping = 0
+      stopped = 0
       starting = 0
-      accel = actuators.gas - actuators.brake
-      if accel < 0 and CS.out.vEgo < 0.05:
-        stopping = 0 # dumb hack to fix jerk
-        # accel = -1.0
-      elif accel > 0 and CS.out.vEgo < 0.05:
+      gas = actuators.gas
+      brake = actuators.brake
+
+      if brake > 0. and CS.out.vEgo <= 0.1:
+        if CS.avg_wheelTick == self.last_wheeltick:
+          self.last_wheeltick_ct += 1
+          if self.last_wheeltick_ct == 6:
+            self.stopped_frame = frame
+          if self.last_wheeltick_ct >= 6:
+            stopped = 1
+            if (frame - self.stopped_frame) >= 100:
+              brake = 1.0
+        else:
+          self.last_wheeltick = CS.avg_wheelTick
+          self.last_wheeltick_ct = 0
+          self.stopped_frame = 0
+      if gas >= 0. and (0.5 >= CS.out.vEgo >= 0):
         starting = 1
-      apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
-      apply_gas = interp(accel, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
+
+      if gas:
+        apply_gas = interp(gas, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
+        apply_accel = clip(aTarget, 0.0, BOSCH_ACCEL_MAX) if aTarget >= 0.0 else 0
+      elif brake:
+        apply_gas = 0
+        apply_accel = interp(-brake, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
+      else:
+        apply_gas = 0
+        apply_accel = 0
+
 
     # steer torque is converted back to CAN reference (positive when steering right)
     apply_steer = int(interp(-actuators.steer * P.STEER_MAX, P.STEER_LOOKUP_BP, P.STEER_LOOKUP_V))
@@ -181,7 +207,7 @@ class CarController():
         idx = frame // 2
         ts = frame * DT_CTRL
         if CS.CP.carFingerprint in HONDA_BOSCH:
-          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, apply_gas, idx, stopping, starting, CS.CP.carFingerprint))
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, active, apply_accel, apply_gas, idx, stopped, starting, CS.CP.carFingerprint))
         else:
           apply_gas = clip(actuators.gas, 0., 1.)
           apply_brake = int(clip(self.brake_last * P.BRAKE_MAX, 0, P.BRAKE_MAX - 1))
