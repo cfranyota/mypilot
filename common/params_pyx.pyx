@@ -15,6 +15,9 @@ cdef enum TxType:
 
 keys = {
   b"AccessToken": [TxType.CLEAR_ON_MANAGER_START],
+  b"ApiCache_DriveStats": [TxType.PERSISTENT],
+  b"ApiCache_Device": [TxType.PERSISTENT],
+  b"ApiCache_Owner": [TxType.PERSISTENT],
   b"AthenadPid": [TxType.PERSISTENT],
   b"CalibrationParams": [TxType.PERSISTENT],
   b"CarBatteryCapacity": [TxType.PERSISTENT],
@@ -28,10 +31,12 @@ keys = {
   b"DisableUpdates": [TxType.PERSISTENT],
   b"DoUninstall": [TxType.CLEAR_ON_MANAGER_START],
   b"DongleId": [TxType.PERSISTENT],
+  b"GitDiff": [TxType.PERSISTENT],
   b"GitBranch": [TxType.PERSISTENT],
   b"GitCommit": [TxType.PERSISTENT],
   b"GitRemote": [TxType.PERSISTENT],
   b"GithubSshKeys": [TxType.PERSISTENT],
+  b"GithubUsername": [TxType.PERSISTENT],
   b"HardwareSerial": [TxType.PERSISTENT],
   b"HasAcceptedTerms": [TxType.PERSISTENT],
   b"HasCompletedSetup": [TxType.PERSISTENT],
@@ -152,11 +157,11 @@ cdef class Params:
     if key not in keys:
       raise UnknownKeyName(key)
 
-    self.p.write_db_value(key, dat)
+    self.p.put(key, dat)
 
   def delete(self, key):
     key = ensure_bytes(key)
-    self.p.delete_db_value(key)
+    self.p.remove(key)
 
 
 def put_nonblocking(key, val, d=None):
