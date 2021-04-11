@@ -22,7 +22,12 @@ ALT_BRAKE_FLAG = 1
 BOSCH_LONG_FLAG = 2
 
 def compute_gb_honda_bosch(accel, speed):
-  return float(accel) / 5.0
+  creep_brake = 0.0
+  creep_speed = 2.3
+  creep_brake_value = 0.15
+  if speed < creep_speed:
+    creep_brake = (creep_speed - speed) / creep_speed * creep_brake_value
+  return float(accel) / 4.8 - creep_brake
 
 def compute_gb_honda_nidec(accel, speed):
   creep_brake = 0.0
@@ -202,7 +207,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 15.38  # 10.93 is end-to-end spec
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2560, 8000], [0, 2566, 3840]]  # TODO: determine if there is a dead zone at the top end
       tire_stiffness_factor = 1.
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.22], [0.066]]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.23], [0.066]]
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
       ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
       ret.longitudinalTuning.kiBP = [0., 35.]
@@ -438,13 +443,13 @@ class CarInterface(CarInterfaceBase):
                                                                          tire_stiffness_factor=tire_stiffness_factor)
 
     if candidate in HONDA_BOSCH:
-      ret.gasMaxBP = [0.0, 5., 10., 22., 35.] # m/s
-      ret.gasMaxV = [0.36, 0.24, 0.19, 0.17, 0.16] # max gas allowed
+      ret.gasMaxBP = [0., 2.7, 5.5, 11.1, 36.1] # m/s
+      ret.gasMaxV = [0.5, 0.33, 0.28, 0.2, 0.15] # max gas allowed
       ret.brakeMaxBP = [0.]  # m/s
       ret.brakeMaxV = [1.]   # max brake allowed
       ret.startAccel = 0.3
       ret.longitudinalTuning.deadzoneBP = [0., 8.05]
-      ret.longitudinalTuning.deadzoneV = [.0, .14]
+      ret.longitudinalTuning.deadzoneV = [.0, .12]
     else:
       ret.gasMaxBP = [0.]  # m/s
       ret.gasMaxV = [0.6] if ret.enableGasInterceptor else [0.]  # max gas allowed

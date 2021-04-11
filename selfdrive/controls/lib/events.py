@@ -513,9 +513,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
   },
 
   EventName.steerTempUnavailable: {
-    ET.SOFT_DISABLE: SoftDisableAlert("Steering Temporarily Unavailable"),
-    ET.NO_ENTRY: NoEntryAlert("Steering Temporarily Unavailable",
-                              duration_hud_alert=0.),
+    ET.WARNING: Alert("", "", AlertStatus.userPrompt, AlertSize.none, Priority.LOW, VisualAlert.steerRequired, AudibleAlert.none, 0., 0., 0.),
   },
 
   EventName.outOfSpace: {
