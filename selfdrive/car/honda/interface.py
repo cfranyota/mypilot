@@ -157,6 +157,9 @@ class CarInterface(CarInterfaceBase):
       ret.enableCruise = not ret.enableGasInterceptor
       ret.communityFeature = ret.enableGasInterceptor
 
+    if candidate == CAR.CRV_5G:
+      ret.enableBsm = 0x12f8bfa7 in fingerprint[0]
+
     cloudlog.warning("ECU Camera Simulated: %r", ret.enableCamera)
     cloudlog.warning("ECU Gas Interceptor: %r", ret.enableGasInterceptor)
 
