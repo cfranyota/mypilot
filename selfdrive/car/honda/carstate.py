@@ -82,12 +82,6 @@ def get_can_signals(CP):
     ]
 
   if CP.carFingerprint in HONDA_BOSCH:
-    # needed for longitudinal state
-    signals += [("WHEEL_TICK_FL", "WHEEL_TICKS", 0),
-                ("WHEEL_TICK_FR", "WHEEL_TICKS", 0),
-                ("WHEEL_TICK_RL", "WHEEL_TICKS", 0),
-                ("WHEEL_TICK_RR", "WHEEL_TICKS", 0)]
-
     # Civic is only bosch to use the same brake message as other hondas.
     if CP.carFingerprint not in (CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT):
       signals += [("BRAKE_PRESSED", "BRAKE_MODULE", 0)]
@@ -103,10 +97,10 @@ def get_can_signals(CP):
       ("AEB_STATUS", "ACC_CONTROL", 0),
     ]
     checks += [
-      ("ACC_HUD", 10),
-      ("EPB_STATUS", 50),
+      # ("ACC_HUD", 10),
+      # ("EPB_STATUS", 50),
       ("GAS_PEDAL_2", 100),
-      ("ACC_CONTROL", 50),
+      # ("ACC_CONTROL", 50),
     ]
     if CP.openpilotLongitudinalControl:
       signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
@@ -259,12 +253,6 @@ class CarState(CarStateBase):
     ret.wheelSpeeds.rr = cp.vl["WHEEL_SPEEDS"]['WHEEL_SPEED_RR'] * CV.KPH_TO_MS * speed_factor
     v_wheel = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr)/4.
 
-    self.FL_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_FL']
-    self.FR_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_FR']
-    self.RL_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_RL']
-    self.RR_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_RR']
-    self.avg_wheelTick = (self.FL_wheelTick + self.FR_wheelTick + self.RL_wheelTick + self.RR_wheelTick) / 4.
-
     # blend in transmission speed at low speed, since it has more low speed accuracy
     v_weight = interp(v_wheel, v_weight_bp, v_weight_v)
     ret.vEgoRaw = (1. - v_weight) * cp.vl["ENGINE_DATA"]['XMISSION_SPEED'] * CV.KPH_TO_MS * speed_factor + v_weight * v_wheel
@@ -381,7 +369,7 @@ class CarState(CarStateBase):
   def get_can_parser(CP):
     signals, checks = get_can_signals(CP)
     bus_pt = 1 if CP.carFingerprint in HONDA_BOSCH else 0
-    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, bus_pt)
+    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, bus_pt, enforce_checks=False)
 
   @staticmethod
   def get_cam_can_parser(CP):

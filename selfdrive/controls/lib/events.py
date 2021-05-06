@@ -355,8 +355,8 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
     ET.WARNING: Alert(
       "Steering Temporarily Unavailable",
       "",
-      AlertStatus.userPrompt, AlertSize.small,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimePrompt, 1., 1., 1.),
+      AlertStatus.userPrompt, AlertSize.none,
+      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.none, 1., 1., 1.),
   },
 
   EventName.preDriverDistracted: {

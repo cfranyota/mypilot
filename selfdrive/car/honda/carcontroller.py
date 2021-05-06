@@ -92,8 +92,6 @@ class CarController():
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
     self.stopped_frame = 0
-    self.last_wheeltick = 0
-    self.last_wheeltick_ct = 0
 
     self.params = CarControllerParams(CP)
 
@@ -141,19 +139,6 @@ class CarController():
       gas = actuators.gas
       brake = actuators.brake
 
-      if brake > 0. and CS.out.vEgo <= 0.1:
-        if CS.avg_wheelTick == self.last_wheeltick:
-          self.last_wheeltick_ct += 1
-          if self.last_wheeltick_ct == 6:
-            self.stopped_frame = frame
-          if self.last_wheeltick_ct >= 6:
-            stopped = 1
-            if (frame - self.stopped_frame) >= 100:
-              brake = 1.0
-        else:
-          self.last_wheeltick = CS.avg_wheelTick
-          self.last_wheeltick_ct = 0
-          self.stopped_frame = 0
       if gas >= 0. and (0.5 >= CS.out.vEgo >= 0):
         starting = 1
 

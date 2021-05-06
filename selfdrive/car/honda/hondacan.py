@@ -112,15 +112,12 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
       acc_hud_values = {
         'CRUISE_SPEED': hud.v_cruise,
         'ENABLE_MINI_CAR': 1,
-        # 'SET_TO_1': 1, TODO: set in opendbc
+        'SET_TO_1': 1,
         'HUD_LEAD': hud.car,
         'HUD_DISTANCE': 3,
         'ACC_ON': hud.car != 0,
-        # 'SET_TO_X1': 1,
+        'SET_TO_X1': 1,
         'IMPERIAL_UNIT': int(not is_metric),
-        'FCM_OFF_1': 0, # disable FCM message - DON'T DO THIS!!
-        'FCM_OFF_2': 0 if not hud.car else 0,
-        'FCM_OFF_3': 0,
       }
     else:
       acc_hud_values = {
