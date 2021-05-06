@@ -8,11 +8,11 @@
 #include <QApplication>
 #include <QPainter>
 
-#include "spinner.hpp"
-#include "qt_window.hpp"
+#include "spinner.h"
+#include "qt_window.h"
 #include "selfdrive/hardware/hw.h"
 
-TrackWidget::TrackWidget(QWidget *parent) : QOpenGLWidget(parent) {
+TrackWidget::TrackWidget(QWidget *parent) : QWidget(parent) {
   setFixedSize(spinner_size);
   setAutoFillBackground(false);
 
@@ -94,7 +94,7 @@ Spinner::Spinner(QWidget *parent) {
   )");
 
   notifier = new QSocketNotifier(fileno(stdin), QSocketNotifier::Read);
-  QObject::connect(notifier, SIGNAL(activated(int)), this, SLOT(update(int)));
+  QObject::connect(notifier, &QSocketNotifier::activated, this, &Spinner::update);
 };
 
 void Spinner::update(int n) {

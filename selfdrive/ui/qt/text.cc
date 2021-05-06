@@ -5,9 +5,9 @@
 #include <QVBoxLayout>
 #include <QApplication>
 
-#include "qt_window.hpp"
+#include "qt_window.h"
 #include "selfdrive/hardware/hw.h"
-#include "widgets/scrollview.hpp"
+#include "widgets/scrollview.h"
 
 int main(int argc, char *argv[]) {
   QApplication a(argc, argv);
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
   });
 #else
   btn->setText("Exit");
-  QObject::connect(btn, SIGNAL(released()), &a, SLOT(quit()));
+  QObject::connect(btn, &QPushButton::released, &a, &QApplication::quit);
 #endif
   layout->addWidget(btn, 0, 0, Qt::AlignRight | Qt::AlignBottom);
 

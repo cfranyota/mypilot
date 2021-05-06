@@ -6,14 +6,14 @@
 
 #include <eigen3/Eigen/Dense>
 
-#include "messaging.hpp"
+#include "messaging.h"
 #include "common/params.h"
 #include "common/util.h"
 #include "common/swaglog.h"
 #include "common/timing.h"
 #include "common/transformations/coordinates.hpp"
 #include "common/transformations/orientation.hpp"
-#include "selfdrive/sensord/sensors/constants.hpp"
+#include "selfdrive/sensord/sensors/constants.h"
 
 #include "models/live_kf.h"
 
@@ -27,6 +27,7 @@ public:
 
   void reset_kalman(double current_time = NAN);
   void reset_kalman(double current_time, Eigen::VectorXd init_orient, Eigen::VectorXd init_pos);
+  void finite_check(double current_time = NAN);
 
   kj::ArrayPtr<capnp::byte> get_message_bytes(MessageBuilder& msg_builder, uint64_t logMonoTime,
     bool inputsOK, bool sensorsOK, bool gpsOK);

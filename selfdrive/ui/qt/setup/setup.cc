@@ -6,10 +6,11 @@
 #include <QVBoxLayout>
 #include <QApplication>
 
-#include "setup.hpp"
-#include "offroad/networking.hpp"
-#include "widgets/input.hpp"
-#include "qt_window.hpp"
+#include "setup.h"
+#include "offroad/networking.h"
+#include "widgets/input.h"
+#include "qt_window.h"
+#include "selfdrive/hardware/hw.h"
 
 #define USER_AGENT "AGNOSSetup-0.1"
 
@@ -63,13 +64,13 @@ QWidget * Setup::build_page(QString title, QWidget *content, bool next, bool pre
   if (prev) {
     QPushButton *back_btn = new QPushButton("Back");
     nav_layout->addWidget(back_btn, 1, Qt::AlignBottom | Qt::AlignLeft);
-    QObject::connect(back_btn, SIGNAL(released()), this, SLOT(prevPage()));
+    QObject::connect(back_btn, &QPushButton::released, this, &Setup::prevPage);
   }
 
   if (next) {
     QPushButton *continue_btn = new QPushButton("Continue");
     nav_layout->addWidget(continue_btn, 0, Qt::AlignBottom | Qt::AlignRight);
-    QObject::connect(continue_btn, SIGNAL(released()), this, SLOT(nextPage()));
+    QObject::connect(continue_btn, &QPushButton::released, this, &Setup::nextPage);
   }
 
   main_layout->addLayout(nav_layout, 0);
@@ -141,9 +142,9 @@ QWidget * Setup::download_failed() {
   QPushButton *reboot_btn = new QPushButton("Reboot");
   nav_layout->addWidget(reboot_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
   QObject::connect(reboot_btn, &QPushButton::released, this, [=]() {
-#ifdef QCOM2
-    std::system("sudo reboot");
-#endif
+    if (Hardware::TICI()) {
+      std::system("sudo reboot");
+    }
   });
 
   QPushButton *restart_btn = new QPushButton("Start over");
@@ -174,7 +175,7 @@ Setup::Setup(QWidget *parent) {
   addWidget(downloading());
   addWidget(download_failed());
 
-  QObject::connect(this, SIGNAL(downloadFailed()), this, SLOT(nextPage()));
+  QObject::connect(this, &Setup::downloadFailed, this, &Setup::nextPage);
 
   setStyleSheet(R"(
     * {

@@ -1,3 +1,6 @@
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #include "locationd.h"
 
 using namespace EKFS;
@@ -242,7 +245,7 @@ void Localizer::handle_gps(double current_time, const cereal::GpsLocationData::R
 }
 
 void Localizer::handle_car_state(double current_time, const cereal::CarState::Reader& log) {
-  this->kf->predict_and_observe(current_time, OBSERVATION_ODOMETRIC_SPEED, { (VectorXd(1) << log.getVEgoRaw()).finished() });
+  //this->kf->predict_and_observe(current_time, OBSERVATION_ODOMETRIC_SPEED, { (VectorXd(1) << log.getVEgoRaw()).finished() });
   this->car_speed = std::abs(log.getVEgo());
   if (this->car_speed < 1e-3) {
     this->kf->predict_and_observe(current_time, OBSERVATION_NO_ROT, { Vector3d(0.0, 0.0, 0.0) });
@@ -285,6 +288,14 @@ void Localizer::reset_kalman(double current_time) {
   this->reset_kalman(current_time, init_x.segment<4>(3), init_x.head(3));
 }
 
+void Localizer::finite_check(double current_time) {
+  bool all_finite = this->kf->get_x().array().isFinite().all() or this->kf->get_P().array().isFinite().all();
+  if (!all_finite){
+    LOGE("Non-finite values detected, kalman reset");
+    this->reset_kalman(current_time);
+  }
+}
+
 void Localizer::reset_kalman(double current_time, VectorXd init_orient, VectorXd init_pos) {
   // too nonlinear to init on completely wrong
   VectorXd init_x = this->kf->get_initial_x();
@@ -317,6 +328,7 @@ void Localizer::handle_msg(const cereal::Event::Reader& log) {
   } else if (log.isLiveCalibration()) {
     this->handle_live_calib(t, log.getLiveCalibration());
   }
+  this->finite_check();
 }
 
 kj::ArrayPtr<capnp::byte> Localizer::get_message_bytes(MessageBuilder& msg_builder, uint64_t logMonoTime,
@@ -335,8 +347,8 @@ kj::ArrayPtr<capnp::byte> Localizer::get_message_bytes(MessageBuilder& msg_build
 int Localizer::locationd_thread() {
   const std::initializer_list<const char *> service_list =
       { "gpsLocationExternal", "sensorEvents", "cameraOdometry", "liveCalibration", "carState" };
-  SubMaster sm(service_list, nullptr, { "gpsLocationExternal" });
   PubMaster pm({ "liveLocationKalman" });
+  SubMaster sm(service_list, nullptr, { "gpsLocationExternal" });
 
   Params params;
 
@@ -374,6 +386,8 @@ int Localizer::locationd_thread() {
 }
 
 int main() {
+  setpriority(PRIO_PROCESS, 0, -20);
+
   Localizer localizer;
   return localizer.locationd_thread();
 }

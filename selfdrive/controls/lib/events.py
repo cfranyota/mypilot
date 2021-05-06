@@ -228,6 +228,10 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .1, .1, .1),
   },
 
+  EventName.controlsInitializing: {
+    ET.NO_ENTRY: NoEntryAlert("Controls Initializing"),
+  },
+
   EventName.startup: {
     ET.PERMANENT: Alert(
       "Be ready to take over at any time",
@@ -283,8 +287,8 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
   EventName.communityFeatureDisallowed: {
     # LOW priority to overcome Cruise Error
     ET.PERMANENT: Alert(
-      "Community Feature Detected",
-      "Enable Community Features in Developer Settings",
+      "openpilot Not Available",
+      "Enable Community Features in Settings to Engage",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
   },
