@@ -228,6 +228,10 @@ routes: dict = {
     'carFingerprint': HYUNDAI.KIA_NIRO_EV,
     'enableCamera': True,
   },
+  "82e9cdd3f43bf83e|2021-05-15--02-42-51": {
+    'carFingerprint': HYUNDAI.ELANTRA_2021,
+    'enableCamera': True,
+  },
   "f7b6be73e3dfd36c|2019-05-12--18-07-16": {
     'carFingerprint': TOYOTA.AVALON,
     'enableCamera': False,
@@ -402,6 +406,10 @@ routes: dict = {
     'carFingerprint': TOYOTA.MIRAI,
     'enableCamera': True,
     'enableDsu': False,
+  },
+  "2c68dda277d887ac|2021-05-11--15-22-20": {
+    'carFingerprint': VOLKSWAGEN.ATLAS_MK1,
+    'enableCamera': True,
   },
   "cae14e88932eb364|2021-03-26--14-43-28": {
     'carFingerprint': VOLKSWAGEN.GOLF_MK7,

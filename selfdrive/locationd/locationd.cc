@@ -7,6 +7,14 @@ using namespace EKFS;
 using namespace Eigen;
 
 ExitHandler do_exit;
+const double ACCEL_SANITY_CHECK = 100.0;  // m/s^2
+const double ROTATION_SANITY_CHECK = 10.0;  // rad/s
+const double TRANS_SANITY_CHECK = 200.0;  // m/s
+const double CALIB_RPY_SANITY_CHECK = 0.5; // rad (+- 30 deg)
+const double ALTITUDE_SANITY_CHECK = 10000; // m
+const double MIN_STD_SANITY_CHECK = 1e-5; // m or rad
+const double VALID_TIME_SINCE_RESET = 1.0; // s
+const double VALID_POS_STD = 50.0; // m
 
 static VectorXd floatlist2vector(const capnp::List<float, capnp::Kind::PRIMITIVE>::Reader& floatlist) {
   VectorXd res(floatlist.size());
@@ -154,9 +162,11 @@ void Localizer::build_live_location(cereal::LiveLocationKalman::Builder& fix) {
   //fix.setGpsTimeOfWeek(this->time.tow);
   fix.setUnixTimestampMillis(this->unix_timestamp_millis);
 
-  if (fix_ecef_std.norm() < 50.0 && this->calibrated) {
+  double time_since_reset = this->kf->get_filter_time() - this->last_reset_time;
+  fix.setTimeSinceReset(time_since_reset);
+  if (fix_ecef_std.norm() < VALID_POS_STD && this->calibrated && time_since_reset > VALID_TIME_SINCE_RESET) {
     fix.setStatus(cereal::LiveLocationKalman::Status::VALID);
-  } else if (fix_ecef_std.norm() < 50.0) {
+  } else if (fix_ecef_std.norm() < VALID_POS_STD && time_since_reset > VALID_TIME_SINCE_RESET) {
     fix.setStatus(cereal::LiveLocationKalman::Status::UNCALIBRATED);
   } else {
     fix.setStatus(cereal::LiveLocationKalman::Status::UNINITIALIZED);
@@ -174,8 +184,21 @@ void Localizer::handle_sensors(double current_time, const capnp::List<cereal::Se
   // TODO does not yet account for double sensor readings in the log
   for (int i = 0; i < log.size(); i++) {
     const cereal::SensorEventData::Reader& sensor_reading = log[i];
+
+    // Ignore empty readings (e.g. in case the magnetometer had no data ready)
+    if (sensor_reading.getTimestamp() == 0){
+      continue;
+    }
+
     double sensor_time = 1e-9 * sensor_reading.getTimestamp();
-    // TODO: handle messages from two IMUs at the same time
+
+    // sensor time and log time should be close
+    if (abs(current_time - sensor_time) > 0.1) {
+      LOGE("Sensor reading ignored, sensor timestamp more than 100ms off from log time");
+      return;
+    }
+
+      // TODO: handle messages from two IMUs at the same time
     if (sensor_reading.getSource() == cereal::SensorEventData::SensorSource::LSM6DS3) {
       continue;
     }
@@ -183,7 +206,10 @@ void Localizer::handle_sensors(double current_time, const capnp::List<cereal::Se
     // Gyro Uncalibrated
     if (sensor_reading.getSensor() == SENSOR_GYRO_UNCALIBRATED && sensor_reading.getType() == SENSOR_TYPE_GYROSCOPE_UNCALIBRATED) {
       auto v = sensor_reading.getGyroUncalibrated().getV();
-      this->kf->predict_and_observe(sensor_time, OBSERVATION_PHONE_GYRO, { Vector3d(-v[2], -v[1], -v[0]) });
+      auto meas = Vector3d(-v[2], -v[1], -v[0]);
+      if (meas.norm() < ROTATION_SANITY_CHECK) {
+        this->kf->predict_and_observe(sensor_time, OBSERVATION_PHONE_GYRO, { meas });
+      }
     }
 
     // Accelerometer
@@ -194,7 +220,10 @@ void Localizer::handle_sensors(double current_time, const capnp::List<cereal::Se
       // 40m/s**2 is a good filter for falling detection, no false positives in 20k minutes of driving
       this->device_fell |= (floatlist2vector(v) - Vector3d(10.0, 0.0, 0.0)).norm() > 40.0;
 
-      this->kf->predict_and_observe(sensor_time, OBSERVATION_PHONE_ACCEL, { Vector3d(-v[2], -v[1], -v[0]) });
+      auto meas = Vector3d(-v[2], -v[1], -v[0]);
+      if (meas.norm() < ACCEL_SANITY_CHECK) {
+        this->kf->predict_and_observe(sensor_time, OBSERVATION_PHONE_ACCEL, { meas });
+      }
     }
   }
 }
@@ -205,8 +234,21 @@ void Localizer::handle_gps(double current_time, const cereal::GpsLocationData::R
     return;
   }
 
-  this->last_gps_fix = current_time;
+  // Sanity checks
+  if ((log.getVerticalAccuracy() <= 0) || (log.getSpeedAccuracy() <= 0) || (log.getBearingAccuracyDeg() <= 0)) {
+    return;
+  }
 
+  if ((std::abs(log.getLatitude()) > 90) || (std::abs(log.getLongitude()) > 180) || (std::abs(log.getAltitude()) > ALTITUDE_SANITY_CHECK)) {
+    return;
+  }
+
+  if (floatlist2vector(log.getVNED()).norm() > TRANS_SANITY_CHECK){
+    return;
+  }
+
+  // Process message
+  this->last_gps_fix = current_time;
   Geodetic geodetic = { log.getLatitude(), log.getLongitude(), log.getAltitude() };
   this->converter = std::make_unique<LocalCoord>(geodetic);
 
@@ -245,9 +287,8 @@ void Localizer::handle_gps(double current_time, const cereal::GpsLocationData::R
 }
 
 void Localizer::handle_car_state(double current_time, const cereal::CarState::Reader& log) {
-  //this->kf->predict_and_observe(current_time, OBSERVATION_ODOMETRIC_SPEED, { (VectorXd(1) << log.getVEgoRaw()).finished() });
   this->car_speed = std::abs(log.getVEgo());
-  if (this->car_speed < 1e-3) {
+  if (log.getStandstill()) {
     this->kf->predict_and_observe(current_time, OBSERVATION_NO_ROT, { Vector3d(0.0, 0.0, 0.0) });
   }
 }
@@ -256,8 +297,20 @@ void Localizer::handle_cam_odo(double current_time, const cereal::CameraOdometry
   VectorXd rot_device = this->device_from_calib * floatlist2vector(log.getRot());
   VectorXd trans_device = this->device_from_calib * floatlist2vector(log.getTrans());
 
+  if ((rot_device.norm() > ROTATION_SANITY_CHECK) || (trans_device.norm() > TRANS_SANITY_CHECK)) {
+    return;
+  }
+
   VectorXd rot_calib_std = floatlist2vector(log.getRotStd());
   VectorXd trans_calib_std = floatlist2vector(log.getTransStd());
+
+  if ((rot_calib_std.minCoeff() <= MIN_STD_SANITY_CHECK) || (trans_calib_std.minCoeff() <= MIN_STD_SANITY_CHECK)){
+    return;
+  }
+
+  if ((rot_calib_std.norm() > 10 * ROTATION_SANITY_CHECK) || (trans_calib_std.norm() > 10 * TRANS_SANITY_CHECK)) {
+    return;
+  }
 
   this->posenet_stds.pop_front();
   this->posenet_stds.push_back(trans_calib_std[0]);
@@ -276,7 +329,12 @@ void Localizer::handle_cam_odo(double current_time, const cereal::CameraOdometry
 
 void Localizer::handle_live_calib(double current_time, const cereal::LiveCalibrationData::Reader& log) {
   if (log.getRpyCalib().size() > 0) {
-    this->calib = floatlist2vector(log.getRpyCalib());
+    auto calib = floatlist2vector(log.getRpyCalib());
+    if ((calib.minCoeff() < -CALIB_RPY_SANITY_CHECK) || (calib.maxCoeff() > CALIB_RPY_SANITY_CHECK)){
+      return;
+    }
+
+    this->calib = calib;
     this->device_from_calib = euler2rot(this->calib);
     this->calib_from_device = this->device_from_calib.transpose();
     this->calibrated = log.getCalStatus() == 1;
@@ -296,6 +354,18 @@ void Localizer::finite_check(double current_time) {
   }
 }
 
+void Localizer::time_check(double current_time) {
+  if (isnan(this->last_reset_time)) {
+    this->last_reset_time = current_time;
+  }
+  double filter_time = this->kf->get_filter_time();
+  bool big_time_gap = !isnan(filter_time) && (current_time - filter_time > 10);
+  if (big_time_gap){
+    LOGE("Time gap of over 10s detected, kalman reset");
+    this->reset_kalman(current_time);
+  }
+}
+
 void Localizer::reset_kalman(double current_time, VectorXd init_orient, VectorXd init_pos) {
   // too nonlinear to init on completely wrong
   VectorXd init_x = this->kf->get_initial_x();
@@ -304,6 +374,7 @@ void Localizer::reset_kalman(double current_time, VectorXd init_orient, VectorXd
   init_x.head(3) = init_pos;
 
   this->kf->init_state(init_x, init_P, current_time);
+  this->last_reset_time = current_time;
 }
 
 void Localizer::handle_msg_bytes(const char *data, const size_t size) {
@@ -317,6 +388,7 @@ void Localizer::handle_msg_bytes(const char *data, const size_t size) {
 
 void Localizer::handle_msg(const cereal::Event::Reader& log) {
   double t = log.getLogMonoTime() * 1e-9;
+  this->time_check(t);
   if (log.isSensorEvents()) {
     this->handle_sensors(t, log.getSensorEvents());
   } else if (log.isGpsLocationExternal()) {

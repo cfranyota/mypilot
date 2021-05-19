@@ -16,7 +16,7 @@ from selfdrive.hardware import HARDWARE, PC, TICI
 from selfdrive.manager.helpers import unblock_stdout
 from selfdrive.manager.process import ensure_running
 from selfdrive.manager.process_config import managed_processes
-from selfdrive.athena.registration import register
+from selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID
 from selfdrive.swaglog import cloudlog, add_file_handler
 from selfdrive.version import dirty, get_git_commit, version, origin, branch, commit, \
                               terms_version, training_version, comma_remote, \
@@ -38,6 +38,7 @@ def manager_init():
   ]
 
   if TICI:
+    default_params.append(("EnableLteOnroad", "1"))
     default_params.append(("IsUploadRawEnabled", "1"))
 
   if params.get_bool("RecordFrontLock"):
@@ -117,6 +118,8 @@ def manager_thread():
   params = Params()
 
   ignore = []
+  if params.get("DongleId") == UNREGISTERED_DONGLE_ID:
+    ignore += ["manage_athenad", "uploader"]
   if os.getenv("NOBOARD") is not None:
     ignore.append("pandad")
   if os.getenv("BLOCK") is not None:
