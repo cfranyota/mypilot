@@ -94,10 +94,8 @@ void safety_setter_thread() {
       return;
     };
 
-    if (p.getBool("ControlsReady")) {
-      params = p.get("CarParams");
-      if (params.size() > 0) break;
-    }
+    params = p.get("CarParams");
+    if (params.size() > 0) break;
     util::sleep_for(100);
   }
   LOGW("got %d bytes CarParams", params.size());

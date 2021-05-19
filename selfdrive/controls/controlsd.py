@@ -120,7 +120,7 @@ class Controls:
     elif self.CP.lateralTuning.which() == 'lqr':
       self.LaC = LatControlLQR(self.CP)
 
-    self.initialized = False
+    self.initialized = True
     self.state = State.disabled
     self.enabled = False
     self.active = False
@@ -283,9 +283,9 @@ class Controls:
     self.sm.update(0)
 
     all_valid = CS.canValid and self.sm.all_alive_and_valid()
-    if not self.initialized and (all_valid or self.sm.frame * DT_CTRL > 2.0):
-      self.initialized = True
-      Params().put_bool("ControlsReady", True)
+    # if not self.initialized and (all_valid or self.sm.frame * DT_CTRL > 2.0):
+    self.initialized = True
+    Params().put_bool("ControlsReady", True)
 
     # Check for CAN timeout
     if not can_strs:
