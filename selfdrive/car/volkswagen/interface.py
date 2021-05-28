@@ -97,6 +97,11 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1569 + STD_CARGO_KG
       ret.wheelbase = 2.79
 
+    elif candidate == CAR.SKODA_OCTAVIA_MK3:
+      # Averages of all 5E/NE Octavia variants
+      ret.mass = 1388 + STD_CARGO_KG
+      ret.wheelbase = 2.68
+
     elif candidate == CAR.SKODA_SCALA_MK1:
       # Averages of all NW Scala variants
       ret.mass = 1192 + STD_CARGO_KG
@@ -152,7 +157,7 @@ class CarInterface(CarInterfaceBase):
         be.pressed = self.CS.buttonStates[button]
         buttonEvents.append(be)
 
-    events = self.create_common_events(ret, extra_gears=[GearShifter.eco, GearShifter.sport])
+    events = self.create_common_events(ret, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic])
 
     # Vehicle health and operation safety checks
     if self.CS.parkingBrakeSet:
