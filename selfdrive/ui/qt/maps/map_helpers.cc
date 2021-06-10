@@ -1,5 +1,10 @@
 #include "selfdrive/ui/qt/maps/map_helpers.h"
 
+#include <QJsonDocument>
+#include <QJsonObject>
+
+#include "selfdrive/common/params.h"
+
 
 QGeoCoordinate to_QGeoCoordinate(const QMapbox::Coordinate &in) {
   return QGeoCoordinate(in.first, in.second);
@@ -83,4 +88,44 @@ float minimum_distance(QGeoCoordinate a, QGeoCoordinate b, QGeoCoordinate p) {
   const float t = std::clamp(dot(ap, ab) / dot(ab, ab), 0.0f, 1.0f);
   const QGeoCoordinate projection = add(a, mul(ab, t));
   return projection.distanceTo(p);
+}
+
+float distance_along_geometry(QList<QGeoCoordinate> geometry, QGeoCoordinate pos) {
+  if (geometry.size() <= 2) {
+    return geometry[0].distanceTo(pos);
+  }
+
+  // 1. Find segment that is closest to current position
+  // 2. Total distance is sum of distance to start of closest segment
+  //    + all previous segments
+  double total_distance = 0;
+  double total_distance_closest = 0;
+  double closest_distance = std::numeric_limits<double>::max();
+
+  for (int i = 0; i < geometry.size() - 1; i++) {
+    double d = minimum_distance(geometry[i], geometry[i+1], pos);
+    if (d < closest_distance) {
+      closest_distance = d;
+      total_distance_closest = total_distance + geometry[i].distanceTo(pos);
+    }
+    total_distance += geometry[i].distanceTo(geometry[i+1]);
+  }
+
+  return total_distance_closest;
+}
+
+std::optional<QMapbox::Coordinate> coordinate_from_param(std::string param) {
+  QString json_str = QString::fromStdString(Params().get(param));
+  if (json_str.isEmpty()) return {};
+
+  QJsonDocument doc = QJsonDocument::fromJson(json_str.toUtf8());
+  if (doc.isNull()) return {};
+
+  QJsonObject json = doc.object();
+  if (json["latitude"].isDouble() && json["longitude"].isDouble()){
+    QMapbox::Coordinate coord(json["latitude"].toDouble(), json["longitude"].toDouble());
+    return coord;
+  } else {
+    return {};
+  }
 }

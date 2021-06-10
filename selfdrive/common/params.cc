@@ -5,14 +5,14 @@
 #endif  // _GNU_SOURCE
 
 #include <dirent.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <mutex>
 #include <unordered_map>
 
@@ -148,11 +148,11 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"AthenadPid", PERSISTENT},
     {"CalibrationParams", PERSISTENT},
     {"CarBatteryCapacity", PERSISTENT},
-    {"CarParams", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT | CLEAR_ON_IGNITION},
+    {"CarParams", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT | CLEAR_ON_IGNITION_ON},
     {"CarParamsCache", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT},
-    {"CarVin", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT | CLEAR_ON_IGNITION},
+    {"CarVin", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT | CLEAR_ON_IGNITION_ON},
     {"CommunityFeaturesToggle", PERSISTENT},
-    {"ControlsReady", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT | CLEAR_ON_IGNITION},
+    {"ControlsReady", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT | CLEAR_ON_IGNITION_ON},
     {"EnableLteOnroad", PERSISTENT},
     {"EndToEndToggle", PERSISTENT},
     {"CompletedTrainingVersion", PERSISTENT},
@@ -174,17 +174,19 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"IsLdwEnabled", PERSISTENT},
     {"IsMetric", PERSISTENT},
     {"IsOffroad", CLEAR_ON_MANAGER_START},
+    {"IsOnroad", PERSISTENT},
     {"IsRHD", PERSISTENT},
     {"IsTakingSnapshot", CLEAR_ON_MANAGER_START},
     {"IsUpdateAvailable", CLEAR_ON_MANAGER_START},
-    {"IsUploadRawEnabled", PERSISTENT},
+    {"UploadRaw", PERSISTENT},
     {"LastAthenaPingTime", PERSISTENT},
     {"LastGPSPosition", PERSISTENT},
     {"LastUpdateException", PERSISTENT},
     {"LastUpdateTime", PERSISTENT},
     {"LiveParameters", PERSISTENT},
     {"MapboxToken", PERSISTENT},
-    {"NavDestination", PERSISTENT}, // TODO: CLEAR_ON_MANAGER_START
+    {"NavDestination", CLEAR_ON_MANAGER_START | CLEAR_ON_IGNITION_OFF},
+    {"NavSettingTime24h", PERSISTENT},
     {"OpenpilotEnabledToggle", PERSISTENT},
     {"PandaFirmware", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT},
     {"PandaFirmwareHex", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT},
@@ -267,7 +269,7 @@ int Params::put(const char* key, const char* value, size_t value_size) {
     // fsync parent directory
     path = params_path + "/d";
     result = fsync_dir(path.c_str());
-  } while(0);
+  } while (false);
 
   close(tmp_fd);
   remove(tmp_path.c_str());

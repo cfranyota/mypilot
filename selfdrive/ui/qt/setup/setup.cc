@@ -1,7 +1,7 @@
-#include "setup.h"
+#include "selfdrive/ui/qt/setup/setup.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include <QApplication>
 #include <QLabel>
@@ -171,7 +171,7 @@ void Setup::nextPage() {
   setCurrentIndex(currentIndex() + 1);
 }
 
-Setup::Setup(QWidget *parent) {
+Setup::Setup(QWidget *parent) : QStackedWidget(parent) {
   addWidget(getting_started());
   addWidget(network_setup());
   addWidget(software_selection());

@@ -1,4 +1,4 @@
-#include "setup.h"
+#include "selfdrive/ui/qt/widgets/setup.h"
 
 #include <QDebug>
 #include <QJsonDocument>
@@ -48,7 +48,7 @@ void PairingQRWidget::refresh(){
   this->updateQrCode(qrString);
 }
 
-void PairingQRWidget::updateQrCode(QString text) {
+void PairingQRWidget::updateQrCode(const QString &text) {
   QrCode qr = QrCode::encodeText(text.toUtf8().data(), QrCode::Ecc::LOW);
   qint32 sz = qr.getSize();
   // make the image larger so we can have a white border

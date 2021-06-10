@@ -1,8 +1,9 @@
-#include "wifi.h"
+#include "selfdrive/ui/qt/setup/wifi.h"
 
 #include <curl/curl.h>
-#include <stdio.h>
-#include <stdlib.h>
+
+#include <cstdio>
+#include <cstdlib>
 
 #include <QApplication>
 #include <QLabel>
@@ -16,7 +17,7 @@ void WifiSetup::finish() {
   qApp->exit();
 }
 
-WifiSetup::WifiSetup(QWidget *parent) {
+WifiSetup::WifiSetup(QWidget *parent) : QWidget(parent) {
   QHBoxLayout *main_layout = new QHBoxLayout();
 
   QPushButton *finish_btn = new QPushButton("Exit");

@@ -1,8 +1,9 @@
 #include "selfdrive/camerad/cameras/camera_common.h"
 
-#include <assert.h>
-#include <stdio.h>
 #include <unistd.h>
+
+#include <cassert>
+#include <cstdio>
 #include <chrono>
 #include <thread>
 
@@ -17,7 +18,7 @@
 #include "selfdrive/common/util.h"
 #include "selfdrive/hardware/hw.h"
 
-#if defined(QCOM) && !defined(QCOM_REPLAY)
+#ifdef QCOM
 #include "selfdrive/camerad/cameras/camera_qcom.h"
 #elif QCOM2
 #include "selfdrive/camerad/cameras/camera_qcom2.h"

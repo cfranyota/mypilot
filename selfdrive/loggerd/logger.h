@@ -1,9 +1,10 @@
 #pragma once
 
+#include <cassert>
 #include <pthread.h>
-#include <stdint.h>
-#include <stdio.h>
 
+#include <cstdint>
+#include <cstdio>
 #include <memory>
 
 #include <bzlib.h>
