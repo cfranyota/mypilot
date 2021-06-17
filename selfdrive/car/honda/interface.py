@@ -520,6 +520,8 @@ class CarInterface(CarInterfaceBase):
       # TODO: more buttons?
       buttonEvents.append(be)
     ret.buttonEvents = buttonEvents
+    
+    extraGears = [car.CarState.GearShifter.sport, car.CarState.GearShifter.low]
 
     extraGears = []
     if not (self.CS.CP.openpilotLongitudinalControl or self.CS.CP.enableGasInterceptor):
