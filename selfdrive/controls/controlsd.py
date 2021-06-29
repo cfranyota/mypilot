@@ -596,6 +596,10 @@ class Controls:
     controlsState.forceDecel = bool(force_decel)
     controlsState.canErrorCounter = self.can_error_counter
 
+    # aragon
+    controlsState.angleSteers = CS.steeringAngleDeg
+    controlsState.steeringAngleDesiredDeg = actuators.steeringAngleDeg
+
     if self.joystick_mode:
       controlsState.lateralControlState.debugState = lac_log
     elif self.CP.steerControlType == car.CarParams.SteerControlType.angle:
