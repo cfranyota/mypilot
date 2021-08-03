@@ -596,10 +596,6 @@ class Controls:
     controlsState.forceDecel = bool(force_decel)
     controlsState.canErrorCounter = self.can_error_counter
 
-    # aragon
-    controlsState.angleSteers = CS.steeringAngleDeg
-    controlsState.steeringAngleDesiredDeg = actuators.steeringAngleDeg
-
     # personal speedometer offset
     if self.v_cruise_kph != 255:
       controlsState.vCruise = controlsState.vCruise * 1.0076

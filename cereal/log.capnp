@@ -661,12 +661,12 @@ struct ControlsState @0x97ff69c53601abf1 {
   decelForTurnDEPRECATED @47 :Bool;
   decelForModelDEPRECATED @54 :Bool;
   awarenessStatusDEPRECATED @26 :Float32;
-  angleSteers @13 :Float32; # aragon
+  angleSteersDEPRECATED @13 :Float32;
   vCurvatureDEPRECATED @46 :Float32;
   mapValidDEPRECATED @49 :Bool;
   jerkFactorDEPRECATED @12 :Float32;
   steerOverrideDEPRECATED @20 :Bool;
-  steeringAngleDesiredDeg @29 :Float32; # aragon
+  steeringAngleDesiredDegDEPRECATED @29 :Float32;
 }
 
 struct ModelDataV2 {

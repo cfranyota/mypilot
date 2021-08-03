@@ -26,7 +26,6 @@ def calc_cruise_offset(offset, speed):
 def get_can_signals(CP, gearbox_msg="GEARBOX"):
   # this function generates lists for signal, messages and initial values
   signals = [
-    ("ENGINE_RPM", "POWERTRAIN_DATA", 0),
     ("XMISSION_SPEED", "ENGINE_DATA", 0),
     ("WHEEL_SPEED_FL", "WHEEL_SPEEDS", 0),
     ("WHEEL_SPEED_FR", "WHEEL_SPEEDS", 0),
@@ -230,7 +229,6 @@ class CarState(CarStateBase):
     self.trMode = 0
     self.read_distance_lines_prev = 4
     self.lead_distance = 255
-    self.engineRPM = 0
 
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()
@@ -287,7 +285,6 @@ class CarState(CarStateBase):
     ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_stalk(
       250, cp.vl["SCM_FEEDBACK"]["LEFT_BLINKER"], cp.vl["SCM_FEEDBACK"]["RIGHT_BLINKER"])
     self.brake_hold = cp.vl["VSA_STATUS"]["BRAKE_HOLD_ACTIVE"]
-    self.engineRPM = cp.vl["POWERTRAIN_DATA"]["ENGINE_RPM"]
 
     self.leftBlinkerOn = cp.vl["SCM_FEEDBACK"]["LEFT_BLINKER"] != 0
     self.rightBlinkerOn = cp.vl["SCM_FEEDBACK"]["RIGHT_BLINKER"] != 0
