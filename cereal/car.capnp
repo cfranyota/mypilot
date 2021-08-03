@@ -187,6 +187,8 @@ struct CarState {
   # clutch (manual transmission only)
   clutchPressed @28 :Bool;
 
+  readdistancelines @37 :Int16;
+
   # which packets this state came from
   canMonoTimes @12: List(UInt64);
 

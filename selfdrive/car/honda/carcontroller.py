@@ -73,7 +73,7 @@ def process_hud_alert(hud_alert):
 
 HUDData = namedtuple("HUDData",
                      ["pcm_accel", "v_cruise",  "car",
-                     "lanes", "fcw", "acc_alert", "steer_required"])
+                     "lanes", "fcw", "acc_alert", "steer_required", "dist_lines"])
 
 
 class CarController():
@@ -126,7 +126,7 @@ class CarController():
     fcw_display, steer_required, acc_alert = process_hud_alert(hud_alert)
 
     hud = HUDData(int(pcm_accel), int(round(hud_v_cruise)), hud_car,
-                  hud_lanes, fcw_display, acc_alert, steer_required)
+                  hud_lanes, fcw_display, acc_alert, steer_required, CS.read_distance_lines)
 
     # **** process the car messages ****
 
@@ -183,8 +183,19 @@ class CarController():
           can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, apply_gas, idx, stopping, starting, CS.CP.carFingerprint))
 
         else:
-          apply_gas = clip(actuators.gas, 0., 1.)
+          if CS.out.vEgo >= -50.0:
+            apply_gas = clip(actuators.gas, 0., 1.) ** 1.8
+          if CS.out.vEgo >= 15.0:
+            apply_gas = clip(actuators.gas, 0., 1.) ** 1.4
+          if CS.out.vEgo >= 30.0:
+            apply_gas = clip(actuators.gas, 0., 1.) ** 1.2
+          if CS.out.vEgo >= 45.0:
+            apply_gas = clip(actuators.gas, 0., 1.)
+          if not CS.out.cruiseState.enabled:
+            apply_gas = 0.
           apply_brake = int(clip(self.brake_last * P.BRAKE_MAX, 0, P.BRAKE_MAX - 1))
+          if not CS.out.cruiseState.enabled:
+            apply_brake = 0
           pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts, ts)
           can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
             pcm_override, pcm_cancel_cmd, hud.fcw, idx, CS.CP.carFingerprint, CS.stock_brake))
