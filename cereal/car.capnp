@@ -109,6 +109,10 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     wideRoadCameraError @102;
     localizerMalfunction @103;
 
+    epsNotFound @105;
+    manualSteeringRequired @106;
+
+
     driverMonitorLowAccDEPRECATED @68;
     radarCanErrorDEPRECATED @15;
     radarCommIssueDEPRECATED @67;
@@ -186,6 +190,9 @@ struct CarState {
 
   # clutch (manual transmission only)
   clutchPressed @28 :Bool;
+
+  lkMode @37 :Bool;
+  readdistancelines @38 :Int16;
 
   # which packets this state came from
   canMonoTimes @12: List(UInt64);

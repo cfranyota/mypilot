@@ -468,6 +468,14 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
 
   EventName.manualRestart: {
     ET.WARNING: Alert(
+      "STEERING REQUIRED: AutoSteer OFF",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .0, .1, .1, alert_rate=0.25),
+  },
+
+  EventName.manualSteeringRequired: {
+    ET.WARNING: Alert(
       "TAKE CONTROL",
       "Resume Driving Manually",
       AlertStatus.userPrompt, AlertSize.mid,
