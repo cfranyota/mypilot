@@ -68,7 +68,7 @@ void HomeWindow::showDriverView(bool show) {
 
 void HomeWindow::mousePressEvent(QMouseEvent* e) {
   // Handle sidebar collapsing
-  if (onroad->isVisible() && (!sidebar->isVisible() || e->x() > sidebar->width())) {
+  if (onroad->isVisible() && (!sidebar->isVisible() || e->x() > sidebar->width()) && !(e->globalX() >= 1500 && e->globalY() >= 885)) {
 
     // TODO: Handle this without exposing pointer to map widget
     // Hide map first if visible, then hide sidebar
@@ -81,6 +81,12 @@ void HomeWindow::mousePressEvent(QMouseEvent* e) {
 
       if (onroad->map != nullptr) onroad->map->setVisible(true);
     }
+  }
+
+  //Handle Dashcam button events
+  if (onroad->isVisible()) {
+    QUIState::ui_state.scene.dashcamX = e->globalX();
+    QUIState::ui_state.scene.dashcamY = e->globalY();
   }
 }
 
