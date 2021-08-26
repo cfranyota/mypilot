@@ -2,6 +2,8 @@ from selfdrive.car.isotp_parallel_query import IsoTpParallelQuery
 from selfdrive.car.honda.values import HONDA_BOSCH, HONDA_BOSCH_EXT, CAR
 from selfdrive.config import Conversions as CV
 from selfdrive.swaglog import cloudlog
+from selfdrive.car.honda.values import HONDA_BOSCH, CAR
+from common.params import Params
 
 # CAN bus layout with relay
 # 0 = ACC-CAN - radar side
@@ -137,6 +139,12 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
   radar_disabled = car_fingerprint in HONDA_BOSCH and openpilot_longitudinal_control
   bus_lkas = get_lkas_cmd_bus(car_fingerprint, radar_disabled)
 
+  is_eon_metric = Params().get("IsMetric", encoding='utf8') == "1"
+  if is_eon_metric:
+    speed_units = 2
+  else:
+    speed_units = 3
+
   if openpilot_longitudinal_control:
     if car_fingerprint in HONDA_BOSCH:
       acc_hud_values = {
@@ -144,7 +152,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
         'ENABLE_MINI_CAR': 1,
         'SET_TO_1': 1,
         'HUD_LEAD': hud.car,
-        'HUD_DISTANCE': 3,
+        'HUD_DISTANCE': hud.dist_lines,
         'ACC_ON': hud.car != 0,
         'SET_TO_X1': 1,
         'IMPERIAL_UNIT': int(not is_metric),
@@ -156,8 +164,9 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
         'CRUISE_SPEED': hud.v_cruise,
         'ENABLE_MINI_CAR': 1,
         'HUD_LEAD': hud.car,
-        'HUD_DISTANCE': 3,    # max distance setting on display
-        'IMPERIAL_UNIT': int(not is_metric),
+        'HUD_DISTANCE_3': 1,
+        'HUD_DISTANCE': hud.dist_lines,    # max distance setting on display
+        'IMPERIAL_UNIT': speed_units,
         'SET_ME_X01_2': 1,
         'SET_ME_X01': 1,
         "FCM_OFF": stock_hud["FCM_OFF"],
@@ -171,6 +180,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
     'SET_ME_X41': 0x41,
     'STEERING_REQUIRED': hud.steer_required,
     'SOLID_LANES': hud.lanes,
+    'DASHED_LANES': hud.dashed_lanes,
     'BEEP': 0,
   }
   if car_fingerprint not in HONDA_BOSCH_EXT:
