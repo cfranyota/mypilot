@@ -114,7 +114,7 @@ CAR_INFO: Dict[str, Union[HondaCarInfo, List[HondaCarInfo]]] = {
   CAR.ACCORDH: HondaCarInfo("Honda Accord Hybrid 2018-21", "All", min_steer_speed=3. * CV.MPH_TO_MS, harness=Harness.bosch),
   CAR.CIVIC: HondaCarInfo("Honda Civic 2016-18", harness=Harness.nidec),
   CAR.CIVIC_BOSCH: [
-    HondaCarInfo("Honda Civic 2019-20", "All", video_link="https://www.youtube.com/watch?v=4Iz1Mz5LGF8", footnotes=[Footnote.CIVIC_DIESEL], min_steer_speed=2. * CV.MPH_TO_MS, harness=Harness.bosch),
+    HondaCarInfo("Honda Civic 2019-20", "All", video_link="https://www.youtube.com/watch?v=4Iz1Mz5LGF8", footnotes=[Footnote.CIVIC_DIESEL], min_steer_speed=12. * CV.MPH_TO_MS, harness=Harness.bosch),
     HondaCarInfo("Honda Civic Hatchback 2017-21", harness=Harness.bosch),
   ],
   CAR.ACURA_ILX: HondaCarInfo("Acura ILX 2016-19", "AcuraWatch Plus", min_steer_speed=25. * CV.MPH_TO_MS, harness=Harness.nidec),
