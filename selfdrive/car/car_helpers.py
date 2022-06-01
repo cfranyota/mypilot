@@ -184,7 +184,7 @@ def get_car(logcan, sendcan):
   disable_radar = Params().get_bool("DisableRadar")
 
   CarInterface, CarController, CarState = interfaces[candidate]
-  CP = CarInterface.get_params(candidate, fingerprints, car_fw)#, disable_radar)
+  CP = CarInterface.get_params(candidate, fingerprints, car_fw, disable_radar)
   CP.carVin = vin
   CP.carFw = car_fw
   CP.fingerprintSource = source
