@@ -41,6 +41,7 @@ def manager_init() -> None:
     ("DisengageOnAccelerator", "1"),
     ("HasAcceptedTerms", "0"),
     ("OpenpilotEnabledToggle", "1"),
+    ("DisableRadar", "1"),
     ("DisableRadar_Allow", "1"),
   ]
   if not PC:
