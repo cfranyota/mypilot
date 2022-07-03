@@ -165,13 +165,13 @@ class CarInterfaceBase(ABC):
       events.add(EventName.doorOpen)
     if cs_out.seatbeltUnlatched:
       events.add(EventName.seatbeltNotLatched)
-    if cs_out.gearShifter != GearShifter.drive and (extra_gears is None or
-       cs_out.gearShifter not in extra_gears):
-      events.add(EventName.wrongGear)
+    #if cs_out.gearShifter != GearShifter.drive and (extra_gears is None or
+    #   cs_out.gearShifter not in extra_gears):
+    #  events.add(EventName.wrongGear)
     if cs_out.gearShifter == GearShifter.reverse:
       events.add(EventName.reverseGear)
-    if not cs_out.cruiseState.available:
-      events.add(EventName.wrongCarMode)
+    #if not cs_out.cruiseState.available:
+    #  events.add(EventName.wrongCarMode)
     if cs_out.espDisabled:
       events.add(EventName.espDisabled)
     if cs_out.stockFcw:
@@ -180,8 +180,8 @@ class CarInterfaceBase(ABC):
       events.add(EventName.stockAeb)
     if cs_out.vEgo > MAX_CTRL_SPEED:
       events.add(EventName.speedTooHigh)
-    if cs_out.cruiseState.nonAdaptive:
-      events.add(EventName.wrongCruiseMode)
+    #if cs_out.cruiseState.nonAdaptive:
+    #  events.add(EventName.wrongCruiseMode)
     if cs_out.brakeHoldActive and self.CP.openpilotLongitudinalControl:
       events.add(EventName.brakeHold)
     if cs_out.parkingBrake:
@@ -209,6 +209,16 @@ class CarInterfaceBase(ABC):
         events.add(EventName.pcmDisable)
 
     return events
+
+  def always_on(self, ret):
+    enable_acc = ret.cruiseState.enabled
+    if ret.cruiseState.available:
+      enable_acc = True
+      if ret.gearShifter in [car.CarState.GearShifter.reverse, car.CarState.GearShifter.park]:
+        enable_acc = False
+      if ret.seatbeltUnlatched or ret.doorOpen:
+        enable_acc = False
+    return enable_acc
 
 
 class RadarInterfaceBase(ABC):

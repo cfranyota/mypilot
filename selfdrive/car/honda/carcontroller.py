@@ -208,10 +208,10 @@ class CarController:
         idx = self.frame // 2
         can_sends.append(hondacan.create_bosch_supplemental_1(self.packer, self.CP.carFingerprint, idx))
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
-      if pcm_cancel_cmd:
-        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx, self.CP.carFingerprint))
-      elif CS.out.cruiseState.standstill:
-        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx, self.CP.carFingerprint))
+      #if pcm_cancel_cmd:
+      #  can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx, self.CP.carFingerprint))
+      #elif CS.out.cruiseState.standstill:
+      #  can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx, self.CP.carFingerprint))
 
     else:
       # Send gas and brake commands.

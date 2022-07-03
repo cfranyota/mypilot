@@ -220,6 +220,7 @@ void generic_rx_checks(bool stock_ecu_detected) {
   if ((safety_mode_cnt > RELAY_TRNS_TIMEOUT) && stock_ecu_detected) {
     relay_malfunction_set();
   }
+  controls_allowed = 1;
 }
 
 void relay_malfunction_set(void) {

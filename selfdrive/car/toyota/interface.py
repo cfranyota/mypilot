@@ -260,7 +260,7 @@ class CarInterface(CarInterfaceBase):
     ret.enableDsu = (len(found_ecus) > 0) and (Ecu.dsu not in found_ecus) and (candidate not in NO_DSU_CAR) and (not ret.smartDsu)
     ret.enableGasInterceptor = 0x201 in fingerprint[0]
     # if the smartDSU is detected, openpilot can send ACC_CMD (and the smartDSU will block it from the DSU) or not (the DSU is "connected")
-    ret.openpilotLongitudinalControl = ret.smartDsu or ret.enableDsu or candidate in TSS2_CAR
+    ret.openpilotLongitudinalControl = False
 
     # we can't use the fingerprint to detect this reliably, since
     # the EV gas pedal signal can take a couple seconds to appear
@@ -289,6 +289,7 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
+    ret.cruiseState.enabled = self.always_on(ret)
 
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 

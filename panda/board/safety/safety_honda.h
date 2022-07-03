@@ -409,9 +409,9 @@ static int honda_nidec_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
     // block stock lkas messages and stock acc messages (if OP is doing ACC)
     int addr = GET_ADDR(to_fwd);
     bool is_lkas_msg = (addr == 0xE4) || (addr == 0x194) || (addr == 0x33D);
-    bool is_acc_hud_msg = addr == 0x30C;
-    bool is_brake_msg = addr == 0x1FA;
-    bool block_fwd = is_lkas_msg || is_acc_hud_msg || (is_brake_msg && !honda_fwd_brake);
+//    bool is_acc_hud_msg = addr == 0x30C;
+//    bool is_brake_msg = addr == 0x1FA;
+    bool block_fwd = is_lkas_msg; // || is_acc_hud_msg || (is_brake_msg && !honda_fwd_brake);
     if (!block_fwd) {
       bus_fwd = 0;
     }

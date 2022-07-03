@@ -341,6 +341,8 @@ class CarInterface(CarInterfaceBase):
     else:
       raise ValueError(f"unsupported car {candidate}")
 
+    ret.openpilotLongitudinalControl = False
+
     # These cars use alternate user brake msg (0x1BE)
     if candidate in HONDA_BOSCH_ALT_BRAKE_SIGNAL:
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HONDA_ALT_BRAKE
@@ -380,6 +382,7 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
+    ret.cruiseState.enabled = self.always_on(ret)
 
     buttonEvents = []
 

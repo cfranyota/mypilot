@@ -102,7 +102,7 @@ class Controls:
                                     ignore_alive=ignore, ignore_avg_freq=['radarState', 'longitudinalPlan'])
 
     # set alternative experiences from parameters
-    self.disengage_on_accelerator = params.get_bool("DisengageOnAccelerator")
+    self.disengage_on_accelerator = False #params.get_bool("DisengageOnAccelerator")
     self.CP.alternativeExperience = 0
     if not self.disengage_on_accelerator:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
@@ -206,13 +206,13 @@ class Controls:
       return
 
     # Disable on rising edge of accelerator or brake. Also disable on brake when speed > 0
-    if (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator) or \
-      (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)):
-      self.events.add(EventName.pedalPressed)
+    #if (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator) or \
+    #  (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)):
+    #  self.events.add(EventName.pedalPressed)
 
-    if CS.gasPressed:
-      self.events.add(EventName.pedalPressedPreEnable if self.disengage_on_accelerator else
-                      EventName.gasPressedOverride)
+    #if CS.gasPressed:
+    #  self.events.add(EventName.pedalPressedPreEnable if self.disengage_on_accelerator else
+    #                  EventName.gasPressedOverride)
 
     self.events.add_from_msg(CS.events)
 
@@ -373,14 +373,14 @@ class Controls:
         self.events.add(EventName.processNotRunning)
 
     # Only allow engagement with brake pressed when stopped behind another stopped car
-    speeds = self.sm['longitudinalPlan'].speeds
-    if len(speeds) > 1:
-      v_future = speeds[-1]
-    else:
-      v_future = 100.0
-    if CS.brakePressed and v_future >= self.CP.vEgoStarting \
-      and self.CP.openpilotLongitudinalControl and CS.vEgo < 0.3:
-      self.events.add(EventName.noTarget)
+    #speeds = self.sm['longitudinalPlan'].speeds
+    #if len(speeds) > 1:
+    #  v_future = speeds[-1]
+    #else:
+    #  v_future = 100.0
+    #if CS.brakePressed and v_future >= self.CP.vEgoStarting \
+    #  and self.CP.openpilotLongitudinalControl and CS.vEgo < 0.3:
+    #  self.events.add(EventName.noTarget)
 
   def data_sample(self):
     """Receive data from sockets and update carState"""
@@ -541,7 +541,7 @@ class Controls:
     CC.enabled = self.enabled
     # Check which actuators can be enabled
     CC.latActive = self.active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
-                     CS.vEgo > self.CP.minSteerSpeed and not CS.standstill
+                     not CS.standstill
     CC.longActive = self.active and not self.events.any(ET.OVERRIDE)
 
     actuators = CC.actuators
